@@ -225,6 +225,77 @@ class Retriever:
             )
         return hits
 
+
+    def add_documents(self, docs: dict[str, str]) -> dict[str, int]:
+        """Append documents to the live index, creating one if none is loaded.
+
+        Used by POST /ingest. Returns {doc_id: chunks_added}.
+
+        Chunk ids stay stable because they are derived from the document id and
+        the chunk's position within that document, not from a global counter -
+        so appending never renumbers an existing chunk. Re-ingesting the same
+        doc_id replaces its chunks rather than duplicating them.
+        """
+        import faiss
+
+        added: dict[str, int] = {}
+        new_chunks: list[Chunk] = []
+        replacing: set[str] = set()
+
+        for doc_id, text in docs.items():
+            chunks = self.chunk(text, doc_id)
+            if not chunks:
+                added[doc_id] = 0
+                continue
+            replacing.add(chunks[0].doc_id)
+            new_chunks.extend(chunks)
+            added[doc_id] = len(chunks)
+
+        if not new_chunks:
+            return added
+
+        # Re-ingesting a document replaces it. FAISS IndexFlatIP has no cheap
+        # delete, so when anything is replaced the index is rebuilt from the
+        # surviving chunks plus the new ones.
+        survivors = [c for c in self._chunks if c.doc_id not in replacing]
+        rebuild = len(survivors) != len(self._chunks) or self._index is None
+
+        vectors = self.embed([c.text for c in new_chunks])
+        if rebuild:
+            keep_vectors = (
+                self.embed([c.text for c in survivors]) if survivors else None
+            )
+            self._chunks = survivors + new_chunks
+            self._index = faiss.IndexFlatIP(vectors.shape[1])
+            if keep_vectors is not None and len(keep_vectors):
+                self._index.add(keep_vectors)
+            self._index.add(vectors)
+        else:
+            self._chunks = self._chunks + new_chunks
+            self._index.add(vectors)
+
+        self._by_id = {c.chunk_id: c for c in self._chunks}
+        self.save_index()
+        return added
+
+    def ensure_index(self) -> bool:
+        """Load the index from disk if one exists. Returns whether it is ready."""
+        if self._index is not None:
+            return True
+        try:
+            self.load_index()
+            return True
+        except (FileNotFoundError, ValueError):
+            return False
+
+    @property
+    def documents(self) -> dict[str, int]:
+        """Chunks per document, for the /health and UI index summary."""
+        counts: dict[str, int] = {}
+        for chunk in self._chunks:
+            counts[chunk.doc_id] = counts.get(chunk.doc_id, 0) + 1
+        return counts
+
     def get_chunk(self, chunk_id: str) -> Chunk | None:
         """Resolve a cited id back to its text. Used by Modules C and D."""
         if not hasattr(self, "_by_id") or len(self._by_id) != len(self._chunks):

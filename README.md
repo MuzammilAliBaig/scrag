@@ -239,6 +239,45 @@ launches.
 **Empty cells stay empty.** A baseline figure without a paper and a table behind it is left blank —
 the ALCE citation cells are blank for exactly this reason, and a test asserts it.
 
+## Running the app
+
+```bash
+uvicorn app.api:app --reload      # terminal 1
+streamlit run app/ui.py           # terminal 2
+```
+
+Then click **Load demo corpus** in the sidebar, or upload your own PDF / .txt / .md.
+
+| Endpoint | Does |
+|---|---|
+| `POST /ingest` | upload, chunk, embed, index — per-file status; one bad file never fails the batch |
+| `POST /ingest/demo` | index the bundled demo corpus so the app is never empty |
+| `POST /ask` | run Modules A–E, return the answer with per-sentence citations |
+| `GET /health` | liveness plus index size and model readiness |
+
+**An abstention is a 200 with `abstained: true`**, never an error code. Returning 4xx for a refusal
+would train every client to treat the system working correctly as a fault.
+
+**Quota exhaustion returns a readable 503**, not a stack trace — the failure most likely to happen
+mid-demo. The message says what still works (retrieval, grading, verification) so a demo can carry
+on.
+
+**The app indexes into its own store** (`data/indexes/app.faiss`), separate from the evaluation
+corpus. Uploading a document through the UI must not pollute the corpus every measured number was
+computed against.
+
+### A limitation worth knowing before you demo
+
+Module B was fine-tuned on PopQA entity questions over Wikipedia lead sections. On documents unlike
+those — policy text, contracts, uploaded PDFs — its grades are **out of distribution**. Measured on
+the four demo documents it labels almost every chunk `ambiguous`, and returns `correct` for
+"Who is the Vice-Chancellor?", which they never mention.
+
+The consequence: the *free* pre-generation refusal (trigger b) does not fire reliably on
+out-of-domain documents, so abstention falls to Modules C, D and E. The guarantee still holds — it
+just costs a generation call instead of being free. On in-distribution questions trigger (b) fires
+on 82.67% of unanswerable ones.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
@@ -286,7 +325,7 @@ Measured, from runs that actually executed:
 | trigger (b) on *unanswerable* questions | **0.8267** (124/150) — caught free, before generation |
 | trigger (b) on *answerable* questions | 0.0267 (4/150) — not over-abstaining |
 | corrective loop, answerable | 0.1733 |
-| Tests | **133 passed** |
+| Tests | **152 passed** |
 
 **Blocked on API credit.** The account ran out mid-Phase-5:
 `400 invalid_request_error: Your credit balance is too low`. Still unmeasured as a result:

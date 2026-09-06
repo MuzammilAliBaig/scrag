@@ -1,4 +1,4 @@
-"""Entry point: `python -m app` starts the FastAPI server."""
+"""Entry point: `python -m app` starts the FastAPI server (app.api)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import config
 
 def main() -> None:
     uvicorn.run(
-        "app.main:app",
+        "app.api:app",
         host=config.APP.host,
         port=config.APP.port,
         reload=config.APP.reload,
