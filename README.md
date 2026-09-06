@@ -167,6 +167,27 @@ With Docker:
 docker compose up --build       # API on :8000, UI on :8501
 ```
 
+## Ingest capacity
+
+| Limit | Value |
+|---|---|
+| Bytes per file | 150 MB |
+| Files per request | 50 |
+| Bytes per request | 2 GB |
+
+**Chunking is not the bottleneck.** 47 MB of text splits into 69,335 chunks in **0.18 s**; embedding
+them takes **~26 min** on a 6-core CPU. Embedding cost scales with *tokens*, so coarser chunks
+(`?bulk=true`) give only ~1.2×, not the 2.6× the chunk count suggests.
+
+At the measured 45 chunks/s, **1.5 minutes buys about 4,000 chunks — roughly 2 documents of 500
+pages.** For 25 × 500 pages in that budget you need a GPU: `config.RETRIEVAL.device` is `"auto"`
+and selects CUDA when present, no code change.
+
+Re-ingesting a document is now **57.8× faster** — vectors are persisted, so replacing one file no
+longer re-embeds the whole corpus.
+
+Full measurements, including what was tried and rejected: **[docs/INGEST_CAPACITY.md](docs/INGEST_CAPACITY.md)**.
+
 ## Documentation
 
 | Document | Contents |
@@ -178,6 +199,7 @@ docker compose up --build       # API on :8000, UI on :8501
 | [docs/tables/](docs/tables/) | all measured results, CSV and markdown |
 | [DEPLOY.md](DEPLOY.md) | Docker, HF Spaces, Render |
 | [CI.md](CI.md) | the regression gate and how to fire it |
+| [docs/INGEST_CAPACITY.md](docs/INGEST_CAPACITY.md) | measured ingest throughput, limits, and the GPU path |
 | `train/LABELING.md` | the frozen chunk-grading rubric |
 | `eval/LABELING_HALLUCINATION.md` | the frozen hallucination rubric |
 

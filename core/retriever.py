@@ -49,15 +49,36 @@ class Retriever:
         self._model = None          # loaded lazily; startup stays offline
         self._index = None
         self._chunks: list[Chunk] = []
+        self._vectors: np.ndarray | None = None
 
     # -- embedding model -------------------------------------------------
     @property
+    def device(self) -> str:
+        """Resolve the embedding device. "auto" prefers CUDA, falls back to CPU."""
+        configured = getattr(self.cfg, "device", "auto")
+        if configured != "auto":
+            return configured
+        try:
+            import torch
+
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        except ImportError:
+            return "cpu"
+
+    @property
     def model(self):
-        """Load the sentence-transformer on first use, pinned to CPU."""
+        """Load the sentence-transformer on first use.
+
+        Device matters more here than anywhere else in the project: embedding
+        throughput is the entire ingest bottleneck. Measured at ~45 chunks/s on
+        a 6-core CPU, which puts a 25 x 500-page ingest at ~26 minutes. A CUDA
+        device is one to two orders of magnitude faster and is the only way a
+        corpus that size lands inside a couple of minutes.
+        """
         if self._model is None:
             from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(self.cfg.embedding_model, device="cpu")
+            self._model = SentenceTransformer(self.cfg.embedding_model, device=self.device)
         return self._model
 
     # -- chunking (1.1, 1.2) ---------------------------------------------
@@ -115,13 +136,16 @@ class Retriever:
         return chunks
 
     # -- embedding (1.3) -------------------------------------------------
-    def embed(self, texts: list[str], batch_size: int = 64) -> np.ndarray:
+    def embed(self, texts: list[str], batch_size: int | None = None,
+              progress=None) -> np.ndarray:
         """Batched, CPU-safe embedding. Returns float32 of shape (n, dim)."""
         if not texts:
             return np.zeros((0, self.cfg.embedding_dim), dtype="float32")
+        if progress:
+            progress(0, len(texts), "embedding (single process)")
         vectors = self.model.encode(
             texts,
-            batch_size=batch_size,
+            batch_size=batch_size or self.cfg.embed_batch_size,
             convert_to_numpy=True,
             normalize_embeddings=self.cfg.normalize_embeddings,
             show_progress_bar=len(texts) > 500,
@@ -152,6 +176,7 @@ class Retriever:
         # Inner product on L2-normalized vectors is cosine similarity.
         self._index = faiss.IndexFlatIP(vectors.shape[1])
         self._index.add(vectors)
+        self._vectors = vectors
         self.save_index()
 
     def _load_cached_embeddings(self, cache_path: Path) -> np.ndarray | None:
@@ -169,6 +194,10 @@ class Retriever:
         path = path or self.cfg.index_path
         path.parent.mkdir(parents=True, exist_ok=True)
         faiss.write_index(self._index, str(path))
+        # Persist vectors so replacing one document never re-embeds the rest.
+        if self._vectors is not None:
+            self.cfg.vectors_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(self.cfg.vectors_path, self._vectors)
         meta = [
             {
                 "chunk_id": c.chunk_id,
@@ -191,6 +220,10 @@ class Retriever:
         if not path.exists():
             raise FileNotFoundError(f"no index at {path} - build it first")
         self._index = faiss.read_index(str(path))
+        self._vectors = (
+            np.load(self.cfg.vectors_path).astype("float32")
+            if self.cfg.vectors_path.exists() else None
+        )
         meta = json.loads(self.cfg.metadata_path.read_text(encoding="utf-8"))
         self._chunks = [Chunk(**row) for row in meta]
         self._by_id = {c.chunk_id: c for c in self._chunks}
@@ -226,15 +259,100 @@ class Retriever:
         return hits
 
 
-    def add_documents(self, docs: dict[str, str]) -> dict[str, int]:
+    # -- bulk ingest (Phase 7+) ------------------------------------------
+    def _worker_count(self, n_texts: int) -> int:
+        """How many processes to embed with.
+
+        Pool startup costs a few seconds, so it is only worth paying above
+        `bulk_worker_threshold`. Defaults to physical cores (capped at 8):
+        transformer inference on CPU scales better across processes than
+        across threads, because each process gets its own BLAS thread pool.
+        """
+        if n_texts < self.cfg.bulk_worker_threshold:
+            return 1
+        workers = self.cfg.embed_workers
+        if workers > 0:
+            return workers
+        import os
+
+        return max(1, min(8, (os.cpu_count() or 2) // 2))
+
+    def embed_parallel(self, texts: list[str], progress=None) -> np.ndarray:
+        """Embed across worker processes, falling back to single-process.
+
+        Falls back rather than failing: the multi-process pool needs a spawn
+        context and can be unavailable (frozen apps, some container setups),
+        and an ingest that works slowly beats an ingest that raises.
+        """
+        if not texts:
+            return np.zeros((0, self.cfg.embedding_dim), dtype="float32")
+
+        workers = self._worker_count(len(texts))
+        if workers <= 1:
+            return self.embed(texts, batch_size=self.cfg.embed_batch_size, progress=progress)
+
+        try:
+            pool = self.model.start_multi_process_pool(target_devices=["cpu"] * workers)
+        except Exception:                                  # noqa: BLE001
+            return self.embed(texts, batch_size=self.cfg.embed_batch_size, progress=progress)
+
+        try:
+            if progress:
+                progress(0, len(texts), f"embedding across {workers} processes")
+            vectors = self.model.encode_multi_process(
+                texts,
+                pool,
+                batch_size=self.cfg.embed_batch_size,
+                normalize_embeddings=self.cfg.normalize_embeddings,
+            )
+            if progress:
+                progress(len(texts), len(texts), "embedding complete")
+            return np.asarray(vectors, dtype="float32")
+        except Exception:                                  # noqa: BLE001
+            return self.embed(texts, batch_size=self.cfg.embed_batch_size, progress=progress)
+        finally:
+            try:
+                self.model.stop_multi_process_pool(pool)
+            except Exception:                              # noqa: BLE001
+                pass
+
+    def chunk_bulk(self, text: str, doc_id: str) -> list[Chunk]:
+        """Chunk with the coarser bulk profile.
+
+        Fewer, larger chunks: a 500-page document yields ~1,070 instead of
+        ~2,800. Embedding is linear in chunk count and is the whole bottleneck,
+        so this is the single most effective lever available on CPU. It trades
+        retrieval precision for throughput, which is why it is opt-in per
+        request and never touches the evaluation corpus.
+        """
+        from dataclasses import replace as _replace
+
+        coarse = _replace(
+            self.cfg,
+            chunk_size=self.cfg.bulk_chunk_size,
+            chunk_overlap=self.cfg.bulk_chunk_overlap,
+        )
+        return Retriever(coarse).chunk(text, doc_id)
+
+    def add_documents(
+        self,
+        docs: dict[str, str],
+        bulk: bool = False,
+        progress=None,
+    ) -> dict[str, int]:
         """Append documents to the live index, creating one if none is loaded.
 
-        Used by POST /ingest. Returns {doc_id: chunks_added}.
+        Returns {doc_id: chunks_added}.
 
-        Chunk ids stay stable because they are derived from the document id and
-        the chunk's position within that document, not from a global counter -
-        so appending never renumbers an existing chunk. Re-ingesting the same
-        doc_id replaces its chunks rather than duplicating them.
+        Chunk ids stay stable because they derive from the document id and the
+        chunk's position within that document, not a global counter, so
+        appending never renumbers an existing chunk. Re-ingesting the same
+        doc_id REPLACES its chunks rather than duplicating them.
+
+        Replacement reuses the stored vectors of surviving chunks. Re-embedding
+        them - which an earlier version did - costs O(corpus) per upload and at
+        70,000 chunks takes over twenty minutes on CPU, so a one-line
+        correction to a small document would re-embed the entire corpus.
         """
         import faiss
 
@@ -242,8 +360,9 @@ class Retriever:
         new_chunks: list[Chunk] = []
         replacing: set[str] = set()
 
+        chunker = self.chunk_bulk if bulk else self.chunk
         for doc_id, text in docs.items():
-            chunks = self.chunk(text, doc_id)
+            chunks = chunker(text, doc_id)
             if not chunks:
                 added[doc_id] = 0
                 continue
@@ -254,29 +373,47 @@ class Retriever:
         if not new_chunks:
             return added
 
-        # Re-ingesting a document replaces it. FAISS IndexFlatIP has no cheap
-        # delete, so when anything is replaced the index is rebuilt from the
-        # surviving chunks plus the new ones.
-        survivors = [c for c in self._chunks if c.doc_id not in replacing]
-        rebuild = len(survivors) != len(self._chunks) or self._index is None
+        if progress:
+            progress(0, len(new_chunks), f"embedding {len(new_chunks):,} chunks")
+        vectors = self.embed_parallel([c.text for c in new_chunks], progress=progress)
 
-        vectors = self.embed([c.text for c in new_chunks])
-        if rebuild:
-            keep_vectors = (
-                self.embed([c.text for c in survivors]) if survivors else None
-            )
-            self._chunks = survivors + new_chunks
-            self._index = faiss.IndexFlatIP(vectors.shape[1])
-            if keep_vectors is not None and len(keep_vectors):
-                self._index.add(keep_vectors)
-            self._index.add(vectors)
-        else:
-            self._chunks = self._chunks + new_chunks
-            self._index.add(vectors)
+        keep_mask = [c.doc_id not in replacing for c in self._chunks]
+        survivors = [c for c, keep in zip(self._chunks, keep_mask) if keep]
 
+        kept_vectors = None
+        if survivors:
+            stored = self._stored_vectors()
+            if stored is not None and len(stored) == len(self._chunks):
+                kept_vectors = stored[np.array(keep_mask, dtype=bool)]
+            else:
+                # No usable vector store (an index built by an older version).
+                # Re-embed once, then persist so it never happens again.
+                kept_vectors = self.embed_parallel([c.text for c in survivors])
+
+        self._chunks = survivors + new_chunks
+        self._vectors = (
+            np.vstack([kept_vectors, vectors]) if kept_vectors is not None else vectors
+        )
+        self._index = faiss.IndexFlatIP(self._vectors.shape[1])
+        self._index.add(self._vectors)
         self._by_id = {c.chunk_id: c for c in self._chunks}
+
+        if progress:
+            progress(len(new_chunks), len(new_chunks), "writing index")
         self.save_index()
         return added
+
+    def _stored_vectors(self) -> np.ndarray | None:
+        """Vectors for the current chunks, from memory or from disk."""
+        if getattr(self, "_vectors", None) is not None:
+            return self._vectors
+        path = self.cfg.vectors_path
+        if path.exists():
+            try:
+                return np.load(path).astype("float32")
+            except (ValueError, OSError):
+                return None
+        return None
 
     def ensure_index(self) -> bool:
         """Load the index from disk if one exists. Returns whether it is ready."""

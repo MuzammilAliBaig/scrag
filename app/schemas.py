@@ -150,6 +150,8 @@ class IngestResponse(BaseModel):
     total_chunks_added: int = 0
     index_size: int = 0
     documents: int = 0
+    elapsed_s: float = 0.0
+    bulk: bool = False
 
 
 class HealthResponse(BaseModel):

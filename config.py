@@ -44,6 +44,49 @@ class RetrievalConfig:
     index_path: Path = field(default_factory=lambda: DATA_DIR / "indexes" / "corpus.faiss")
     metadata_path: Path = field(default_factory=lambda: DATA_DIR / "indexes" / "corpus.meta.json")
     normalize_embeddings: bool = True
+    # Vectors are persisted beside the index so replacing a document never
+    # re-embeds the documents that survived. Re-embedding survivors is O(corpus)
+    # per upload and dominates everything else at scale.
+    vectors_path: Path = field(default_factory=lambda: DATA_DIR / "indexes" / "corpus.vectors.npy")
+
+    # -- bulk ingest ----------------------------------------------------
+    # Embedding is the bottleneck: measured ~41-52 chunks/s for bge-small on a
+    # 6-core CPU, and neither batch size, sequence length nor int8 quantisation
+    # moved it (sentence-transformers pads to the longest item in the batch, so
+    # a lower max_seq_length buys nothing when chunks are already ~200 tokens).
+    # The only two levers that work are fewer chunks and more processes.
+    # "auto" uses CUDA when available and falls back to CPU. Everything in this
+    # project was MEASURED on CPU; the device is configurable because embedding
+    # throughput is the entire ingest bottleneck and it is the one thing a GPU
+    # changes by an order of magnitude.
+    device: str = "auto"
+    embed_batch_size: int = 64
+    # Worker processes for embedding. 1 = single process (the DEFAULT, and the
+    # fastest configuration measured here); 0 = auto (physical cores, capped
+    # at 8); N = that many.
+    #
+    # MEASURED on a 6-physical-core CPU: single process 45 chunks/s, six worker
+    # processes 22 chunks/s. Process parallelism is a PESSIMISATION here - the
+    # workers contend for the same cores that torch already saturates via BLAS
+    # threads, and pool startup costs ~30 s on top. The path is kept because it
+    # can win on a machine with many more cores, but it is off by default and
+    # the number above is why. Re-measure with:
+    #   python -m eval.bench_ingest --docs 25 --pages 500 --workers 6
+    embed_workers: int = 1
+    bulk_worker_threshold: int = 2000
+    # Coarser chunking for large uploads: 26,557 chunks instead of 69,335 on a
+    # 25 x 500-page corpus.
+    #
+    # MEASURED, and the result is not what it looks like: coarse chunks embed at
+    # 21 chunks/s against 45 chunks/s for default chunks, because embedding cost
+    # scales with TOKENS, not chunks. Net saving is about 1.2x (21.2 min vs
+    # 25.7 min), almost all of it from the slightly lower overlap ratio
+    # (240/2000 = 12% vs 120/800 = 15%), not from chunk size.
+    #
+    # It is still worth having - a 2.6x smaller index costs less memory and less
+    # search time - but it is not the throughput lever it appears to be.
+    bulk_chunk_size: int = 2000
+    bulk_chunk_overlap: int = 240
 
 
 # --------------------------------------------------------------------------
