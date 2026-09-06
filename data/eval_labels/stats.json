@@ -1,0 +1,24 @@
+{
+  "questions_seen": 1000,
+  "questions_with_subject_in_corpus": 754,
+  "pairs": 3770,
+  "label_distribution": {
+    "correct": 727,
+    "ambiguous": 258,
+    "wrong": 2785
+  },
+  "action_distribution": {
+    "proceed": 646,
+    "corrective_retrieve": 93,
+    "abstain": 15
+  },
+  "splits": {
+    "train": 2635,
+    "val": 375,
+    "test": 760
+  },
+  "seed": 42,
+  "source_split": "test",
+  "k": 5,
+  "labeling": "weak (train/weak_labels.py), NOT hand-labeled"
+}

@@ -24,6 +24,13 @@ datasets==5.0.1
 
 # --- Modules B and D: DeBERTa evaluator, NLI verifier (Phases 2 and 4) ---
 transformers==5.16.1
+sentencepiece==0.2.2        # DeBERTa-v3 tokenizer
+protobuf==7.36.1            # REQUIRED to read DeBERTa spm.model. Without it
+                            # transformers falls back to a tiktoken reader and
+                            # dies with "Error parsing line b'' in spm.model",
+                            # which names the wrong culprit.
+tiktoken==0.14.0            # pulled in by that same tokenizer-conversion path;
+                            # a BPE library, not an OpenAI API client
 
 # --- Tests ---
 pytest==9.1.1

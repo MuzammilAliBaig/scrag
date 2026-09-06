@@ -54,15 +54,26 @@ class EvaluatorConfig:
     base_model: str = "microsoft/deberta-v3-small"
     # Filled in by Phase 2 once the fine-tune exists; None means fall back to
     # the untrained base model and say so loudly.
-    checkpoint_path: Path | None = None
+    checkpoint_path: Path | None = field(
+        default_factory=lambda: DATA_DIR / "models" / "evaluator"
+    )
     labels: tuple[str, ...] = ("correct", "ambiguous", "wrong")
-    max_length: int = 512
+    # Cross-encoder input is question + chunk. Chunks are 800 chars (~200
+    # tokens), so 320 fits both with headroom. Train and inference must use the
+    # same value or the checkpoint sees different truncation than it trained on.
+    max_length: int = 320
     # PLACEHOLDER thresholds — Phase 2 replaces these with measured values.
     correct_threshold: float = 0.70
     wrong_threshold: float = 0.30
     # Corrective retrieval fires when the top chunk grades below this.
     corrective_trigger_threshold: float = 0.50
+    # Bounded, per the phase design note: an unbounded re-query loop burns time
+    # on a hard query and can never terminate.
     max_corrective_rounds: int = 1
+    # Chunks fetched per corrective round, wider than top_k to surface
+    # something the first pass missed.
+    corrective_fetch_k: int = 15
+    batch_size: int = 16
 
 
 # --------------------------------------------------------------------------
