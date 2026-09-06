@@ -303,6 +303,28 @@ cold rebuild, and it stays reproducible from a clean clone.
 
 Deployment steps for Hugging Face Spaces and Render: **[DEPLOY.md](DEPLOY.md)**.
 
+## CI regression gate
+
+```bash
+python -m eval.check_regression                              # exit 0 / 1
+python -m eval.check_regression --simulate citation_recall=0.60   # fire it
+```
+
+Two workflows: `test.yml` (unit tests) and `eval.yml` (the gate). **The push-triggered eval job is
+free** — it runs only metrics that need no generation, computing citation P/R from cached Claude
+responses. The paid subset is behind a `workflow_dispatch` input and capped at 50 questions,
+because every CI eval run spends real money on the only paid component here.
+
+Thresholds live in `eval/baseline_metrics.json`, **below** each measured value with a stated margin.
+Two rules the gate enforces that are easy to get wrong:
+
+- **A missing measurement fails the build**, it does not pass. A gate that goes green when the
+  evidence disappears looks like protection and isn't.
+- **`faithfulness` is `null` and gets skipped, loudly.** It has never been measured, and inventing
+  a threshold for it would make the metric this project cares about most unfalsifiable.
+
+Full details and the regression drill: **[CI.md](CI.md)**.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
@@ -350,7 +372,7 @@ Measured, from runs that actually executed:
 | trigger (b) on *unanswerable* questions | **0.8267** (124/150) — caught free, before generation |
 | trigger (b) on *answerable* questions | 0.0267 (4/150) — not over-abstaining |
 | corrective loop, answerable | 0.1733 |
-| Tests | **152 passed** |
+| Tests | **165 passed** |
 
 **Blocked on API credit.** The account ran out mid-Phase-5:
 `400 invalid_request_error: Your credit balance is too low`. Still unmeasured as a result:

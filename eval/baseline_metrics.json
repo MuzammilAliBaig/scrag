@@ -1,0 +1,117 @@
+{
+  "_README": [
+    "Committed baseline the CI gate compares against. Every value here was produced",
+    "by a run recorded in eval/results/ - nothing is estimated or aspirational.",
+    "",
+    "Each entry has a `value` (what we measured), a `min` (the gate threshold) and a",
+    "`margin`. Thresholds sit BELOW the measurement on purpose: a gate set exactly at",
+    "today's number fires on noise, gets disabled within a week, and then protects",
+    "nothing.",
+    "",
+    "Margins are not uniform. They are sized by how noisy each metric actually is:",
+    "  - deterministic, local metrics (retrieval, Module B) get a small margin,",
+    "    because the same index and checkpoint reproduce the same number exactly;",
+    "  - metrics downstream of the LLM get a larger one, because generation varies",
+    "    between runs even at temperature 0 and even with a fixed seed;",
+    "  - parseable_citation_rate is the exception: it is a hard contract, not a",
+    "    score, so its floor is 1.0 with no margin at all. One uncited sentence is",
+    "    a real defect.",
+    "",
+    "`value: null` means NOT YET MEASURED. The gate skips those and says so, rather",
+    "than treating a missing measurement as a pass."
+  ],
+  "seed": 42,
+  "recorded": "2026-09-07",
+  "metrics": {
+    "retrieval_hit_rate": {
+      "value": 0.87,
+      "min": 0.82,
+      "margin": 0.05,
+      "direction": "higher_is_better",
+      "source": "eval/results/retrieval_check.json",
+      "command": "python -m eval.check_retrieval --split dev --limit 200",
+      "paid": false,
+      "note": "Deterministic given the index. Margin covers an index rebuild, which shifted chunk count 1612 -> 1615 once already."
+    },
+    "evaluator_chunk_accuracy": {
+      "value": 0.9197,
+      "min": 0.88,
+      "margin": 0.0397,
+      "direction": "higher_is_better",
+      "source": "eval/results/evaluator_bench.json",
+      "command": "python -m eval.run_evaluator_bench --split test",
+      "paid": false,
+      "note": "Deterministic given the checkpoint and thresholds."
+    },
+    "evaluator_macro_f1": {
+      "value": 0.801,
+      "min": 0.75,
+      "margin": 0.051,
+      "direction": "higher_is_better",
+      "source": "eval/results/evaluator_bench.json",
+      "command": "python -m eval.run_evaluator_bench --split test",
+      "paid": false,
+      "note": "Macro F1, not accuracy, so the `ambiguous` class keeps counting. It is the weakest class at F1 0.588 and the first thing a regression would hit."
+    },
+    "parseable_citation_rate": {
+      "value": 1.0,
+      "min": 1.0,
+      "margin": 0.0,
+      "direction": "higher_is_better",
+      "source": "eval/results/citation_bench.json",
+      "command": "python -m eval.run_citation_bench --dataset alce --limit 200",
+      "paid": true,
+      "note": "A contract, not a score. No margin: one sentence without a resolvable citation is a defect, not noise."
+    },
+    "invalid_id_rate": {
+      "value": 0.0,
+      "max": 0.02,
+      "margin": 0.02,
+      "direction": "lower_is_better",
+      "source": "eval/results/citation_bench.json",
+      "command": "python -m eval.run_citation_bench --dataset alce --limit 200",
+      "paid": true,
+      "note": "An invented source. Currently zero; the small margin allows one or two in 400+ sentences before failing."
+    },
+    "citation_recall": {
+      "value": 0.8388,
+      "min": 0.78,
+      "margin": 0.0588,
+      "direction": "higher_is_better",
+      "source": "eval/results/citation_pr.json",
+      "command": "python -m eval.run_citation_pr --limit 200",
+      "paid": false,
+      "note": "Free when run against cached generations. Larger margin than the local metrics because it is downstream of the LLM."
+    },
+    "citation_precision": {
+      "value": 0.7409,
+      "min": 0.68,
+      "margin": 0.0609,
+      "direction": "higher_is_better",
+      "source": "eval/results/citation_pr.json",
+      "command": "python -m eval.run_citation_pr --limit 200",
+      "paid": false,
+      "note": "Penalises citation padding. Same reasoning on margin as recall."
+    },
+    "hallucination_rate_auto": {
+      "value": 0.1612,
+      "max": 0.22,
+      "margin": 0.0588,
+      "direction": "lower_is_better",
+      "source": "eval/results/citation_pr.json",
+      "command": "python -m eval.run_citation_pr --limit 200",
+      "paid": false,
+      "note": "Verifier-derived, not human-verified. It measures disagreement between the generator and Module D and inherits Module D's errors."
+    },
+    "faithfulness": {
+      "value": null,
+      "min": null,
+      "margin": null,
+      "direction": "higher_is_better",
+      "source": "eval/results/baseline.json",
+      "command": "python -m eval.run_baseline --split dev --limit 150",
+      "paid": true,
+      "note": "NOT YET MEASURED - the Phase 1 baseline has never run, because the API credit balance was exhausted. The gate SKIPS this metric and says so. It must not be given an invented threshold: the phase this gate exists to protect is the one whose number does not exist yet."
+    }
+  }
+}
