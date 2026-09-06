@@ -25,8 +25,8 @@ evaluator. Everything else reproduces published work.
 | B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | **built** (Phase 2) |
 | C | `core/generator.py` | Generate answer, one citation per sentence | **built** (Phase 3) |
 | D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | **built** (Phase 4) |
-| E | `core/repair.py` | Regenerate, drop, or abstain | stub (Phase 5) |
-| — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | stub |
+| E | `core/repair.py` | Regenerate, drop, or abstain | **built** (Phase 5) |
+| — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | **complete** |
 
 ## Setup
 
@@ -187,6 +187,32 @@ everything still appears to work.
 *jointly* support the sentence, matching ALCE citation recall. Measured against the `any` policy the
 difference was 0.2033 vs 0.2057 flag rate, i.e. immaterial on this data.
 
+## Module E — repair and abstention
+
+Three outcomes for a flagged sentence, in order: **repair** it (targeted regeneration of that one
+sentence, then re-verification through Module D), **drop** it if the repair also fails, or
+**abstain** on the whole answer.
+
+```bash
+python -m core.orchestrator --demo --query "What is Boulsa the capital of?"
+python -m eval.run_abstention_bench --limit 150 --no-generation   # free: trigger (b) only
+python -m eval.run_abstention_bench --limit 150                   # PAID: full risk-coverage
+```
+
+**Abstention is a visible product state, never an empty response.** The `FinalAnswer` carries
+`abstained=True` plus a reason naming which of six triggers fired, so the API and UI render it as a
+deliberate refusal.
+
+**A repair never passes by fiat.** A regenerated sentence must pass Module D on the second look or
+it is dropped. Bounded at one attempt — an unbounded loop burns budget and can oscillate between
+two equally unsupported phrasings.
+
+**The fragment guard.** If dropping sentences would leave a disconnected clause, the system abstains
+instead. A stub is worse than a clean refusal.
+
+**Trigger (b) costs nothing.** When Module B grades every retrieved chunk wrong, the pipeline stops
+before the generator is called, so that abstention is free.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
@@ -225,9 +251,21 @@ Measured, from runs that actually executed:
 | flag rate on real answers | **0.2033** (85 sentences) |
 | of which contradictions | 27 (6.5%) — generation failures |
 | neutral | 83 (19.9%) — mostly retrieval failures |
+| **Module E** (PopQA dev, 150+150, retrieval+grading only) | |
+| trigger (b) on *unanswerable* questions | **0.8267** (124/150) — caught free, before generation |
+| trigger (b) on *answerable* questions | 0.0267 (4/150) — not over-abstaining |
+| corrective loop, answerable | 0.1733 |
+| Tests | **110 passed** |
 
-Still unmeasured: the **Phase 1 baseline** (answer accuracy, faithfulness, per-query cost on
-PopQA). The key is now set, so `python -m eval.run_baseline --split dev --limit 200` will close it.
+**Blocked on API credit.** The account ran out mid-Phase-5:
+`400 invalid_request_error: Your credit balance is too low`. Still unmeasured as a result:
+
+- the **Phase 1 baseline** (accuracy, faithfulness, per-query cost),
+- Phase 5's **full risk-coverage curve** and answered-subset accuracy.
+
+Everything that runs locally is measured. Add credit, then:
+`python -m eval.run_baseline --split dev --limit 150` and
+`python -m eval.run_abstention_bench --limit 150`.
 
 **Prompt caching, measured:** the citation prompt prefix is 758 tokens and *does* cache
 (227,810 cache-read tokens over the run). The Phase 1 plain prompt is 476 tokens — below Opus 5's

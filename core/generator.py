@@ -360,6 +360,7 @@ class CitationGenerator(PlainGenerator):
         self.retry_count = 0
         self.structured_used = 0
         self.fallback_used = 0
+        self.repair_calls = 0
 
     # -- prompt ----------------------------------------------------------
     def format_context(self, context: list[Chunk]) -> str:
@@ -554,6 +555,118 @@ class CitationGenerator(PlainGenerator):
             },
         )
 
+
+    # -- Module E support: targeted regeneration (Phase 5) ----------------
+    def regenerate_sentence(
+        self, question: str, failed_sentence: str, context: list[Chunk]
+    ) -> tuple[CitedSentence | None, str]:
+        """Rewrite ONE failed sentence so the passages support it.
+
+        Returns (repaired_sentence, status). `None` with status "unrepairable"
+        means the model reported that no passage supports any version of the
+        claim - a correct outcome, and Module E then drops the sentence.
+
+        Targeted by design: rewriting the whole answer would invalidate the
+        verdicts already earned by the sentences that passed.
+        """
+        import anthropic
+
+        from core import citation as citation_mod
+
+        key = hashlib.sha256(
+            json.dumps(
+                {
+                    "module": "E-repair",
+                    "model": self.cfg.model,
+                    "question": question,
+                    "failed": failed_sentence,
+                    "texts": [c.text for c in context],
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()[:32]
+
+        cached = self._cache_read(key)
+        if cached is not None:
+            payload = json.loads(cached)
+            self.usage_log.append(GenerationUsage(cached=True))
+        else:
+            prompt = (
+                f"Passages:\n{self.format_context(context)}\n\n"
+                f"Original question: {question}\n\n"
+                f"Failed sentence: {failed_sentence}"
+            )
+            started = time.time()
+            try:
+                response = self.client.messages.create(
+                    model=self.cfg.model,
+                    max_tokens=self.cfg.max_tokens,
+                    system=[
+                        {
+                            "type": "text",
+                            "text": REPAIR_SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    thinking={"type": self.cfg.thinking} if self.cfg.thinking else None,
+                    output_config={
+                        "effort": self.cfg.effort,
+                        "format": {"type": "json_schema", "schema": REPAIR_SCHEMA},
+                    },
+                    messages=[{"role": "user", "content": prompt}],
+                )
+            except anthropic.NotFoundError as exc:
+                raise GenerationError(f"model {self.cfg.model!r} not found: {exc}") from exc
+            except anthropic.RateLimitError:
+                return None, "rate_limited"
+            except anthropic.APIStatusError as exc:
+                if exc.status_code >= 500:
+                    return None, f"server_error_{exc.status_code}"
+                raise GenerationError(
+                    f"API rejected the repair request ({exc.status_code}): {exc}"
+                ) from exc
+            except anthropic.APIConnectionError:
+                return None, "connection_error"
+
+            self.usage_log.append(
+                GenerationUsage(
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                    cache_creation_input_tokens=getattr(
+                        response.usage, "cache_creation_input_tokens", 0) or 0,
+                    cache_read_input_tokens=getattr(
+                        response.usage, "cache_read_input_tokens", 0) or 0,
+                    latency_s=time.time() - started,
+                )
+            )
+            raw = "".join(b.text for b in response.content if b.type == "text").strip()
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                return None, "unparseable_repair_output"
+            self._cache_write(key, json.dumps(payload))
+
+        self.repair_calls += 1
+        if not payload.get("repairable") or not (payload.get("text") or "").strip():
+            return None, "unrepairable"
+
+        inline = citation_mod.parse_sentence(payload["text"].strip())
+        numbers = list(
+            dict.fromkeys(
+                [int(n) for n in payload.get("citations", []) if isinstance(n, int)]
+                + inline.numbers
+            )
+        )
+        parsed = citation_mod.ParsedSentence(
+            text=inline.text, raw=payload["text"], numbers=numbers, had_citation=bool(numbers)
+        )
+        sentences, _ = citation_mod.validate([parsed], context)
+        repaired = sentences[0]
+        if not repaired.parseable:
+            # Rewritten but cited nothing real. Never guess a citation for it.
+            return None, "repaired_but_uncited"
+        return repaired, "repaired"
+
     def path_totals(self) -> dict[str, int | float]:
         """Which output path was used, and how often a retry was needed."""
         total = self.structured_used + self.fallback_used
@@ -562,4 +675,47 @@ class CitationGenerator(PlainGenerator):
             "text_fallback_path": self.fallback_used,
             "fallback_rate": round(self.fallback_used / total, 4) if total else 0.0,
             "parse_retries": self.retry_count,
+            "repair_calls": self.repair_calls,
         }
+
+
+# --------------------------------------------------------------------------
+# Module E support: targeted single-sentence regeneration (Phase 5)
+# --------------------------------------------------------------------------
+
+REPAIR_SYSTEM_PROMPT = """You are repairing one sentence of an answer that failed verification.
+
+An automated entailment check found that the sentence below is NOT supported by the passages it cited. Your job is to rewrite that ONE sentence so that it is fully supported by the numbered passages, or to report that it cannot be supported at all.
+
+You are given the original question for context, the numbered passages, and the failed sentence.
+
+RULES
+
+1. Rewrite only the failed sentence. Do not write a new answer, do not add sentences, and do not comment on the repair.
+2. The rewritten sentence must be entailed by the passages you cite. If the passages support a weaker but accurate claim, make the weaker claim rather than restating the original.
+3. Cite by passage number in square brackets, exactly as before: [1], or [1][3] when the sentence genuinely draws on more than one.
+4. Cite only passage numbers from the list you are given. Never invent a passage.
+5. If no passage supports any version of this claim, set repairable to false and leave the text empty. That is a correct and expected outcome, not a failure - dropping an unsupportable sentence is better than keeping it.
+6. Do not restate facts the passages do not contain, and do not use outside knowledge to rescue the sentence.
+7. Keep the rewritten sentence to a single claim wherever possible. A sentence making one claim is easier to verify than one making two."""
+
+REPAIR_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "repairable": {
+            "type": "boolean",
+            "description": "False when no passage supports any version of the claim.",
+        },
+        "text": {
+            "type": "string",
+            "description": "The rewritten sentence, with NO citation markers inside it. Empty when repairable is false.",
+        },
+        "citations": {
+            "type": "array",
+            "description": "1-based passage numbers supporting the rewritten sentence.",
+            "items": {"type": "integer"},
+        },
+    },
+    "required": ["repairable", "text", "citations"],
+    "additionalProperties": False,
+}

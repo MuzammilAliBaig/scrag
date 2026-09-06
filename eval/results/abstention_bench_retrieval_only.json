@@ -1,0 +1,28 @@
+{
+  "mode": "retrieval_and_grading_only",
+  "api_cost_usd": 0.0,
+  "note": "Partial Phase 5 measurement. Generation, repair and the full risk-coverage curve require API credit.",
+  "subsets": {
+    "answerable": {
+      "n": 150,
+      "pre_generation_abstention_rate": 0.0267,
+      "corrective_loop_rate": 0.1733,
+      "module_b_actions": {
+        "proceed": 121,
+        "corrective_retrieve": 25,
+        "abstain": 4
+      }
+    },
+    "unanswerable": {
+      "n": 150,
+      "pre_generation_abstention_rate": 0.8267,
+      "corrective_loop_rate": 0.04,
+      "module_b_actions": {
+        "abstain": 124,
+        "proceed": 20,
+        "corrective_retrieve": 6
+      }
+    }
+  },
+  "elapsed_s": 183.6
+}

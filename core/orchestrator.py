@@ -7,8 +7,10 @@ retrieval) -> generate with citations (C) -> verify (D) -> repair or abstain
 (E). Each variant of the Phase 6 ablation is this pipeline with later stages
 switched off, which is why the stages stay independently toggleable.
 
-As of Phase 2, stages A and B are live and C is the plain generator. D and E
-raise NotImplementedError and are reached only when their flags are on.
+As of Phase 5 the pipeline is complete end to end: A retrieves, B grades and
+can trigger corrective retrieval, C generates with forced citations, D verifies
+each citation by entailment, and E repairs, drops or abstains so that no
+unverified sentence reaches the output.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from dataclasses import dataclass, field
 import config
 from core.evaluator import RetrievalEvaluator
 from core.generator import CitationGenerator, PlainGenerator
-from core.repair import Repairer
+from core.repair import AbstainReason, Repairer
 from core.retriever import Retriever
 from core.types import Chunk, ChunkLabel, FinalAnswer, RetrievalAction
 from core.verifier import NLIVerifier
@@ -138,18 +140,15 @@ class Orchestrator:
         """Run the pipeline end to end for one question."""
         context, trace = self.retrieve_and_grade(question)
 
-        # An abstention here costs nothing: the pipeline stops before the one
-        # paid component is ever called.
-        if trace.abstained_before_generation or not context:
-            return FinalAnswer(
-                question=question,
-                text=config.REPAIR.abstention_message,
-                sentences=[],
-                citations=[],
-                abstained=True,
-                abstain_reason="no chunk graded usable by Module B",
-                trace={"retrieval": trace.as_dict()},
+        # Abstention trigger (b): Module B graded every retrieved chunk wrong.
+        # This costs nothing - the pipeline stops before the one paid component
+        # is ever called.
+        if (trace.abstained_before_generation and config.REPAIR.abstain_on_no_correct_chunk) or not context:
+            answer = self.repairer.abstain(
+                question, AbstainReason.NO_USABLE_CHUNK, {"retrieval": trace.as_dict()}
             )
+            answer.trace["cost"] = "zero - abstained before generation"
+            return answer
 
         draft = self.generator.generate(question, context)
 
@@ -175,3 +174,60 @@ class Orchestrator:
         final = self.repairer.repair(draft, report)   # Module E - Phase 5
         final.trace.setdefault("retrieval", trace.as_dict())
         return final
+
+
+# --------------------------------------------------------------------------
+# Demo - python -m core.orchestrator --query "..." --demo
+# --------------------------------------------------------------------------
+
+
+def _demo(question: str) -> None:
+    import sys
+
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    retriever = Retriever()
+    retriever.load_index()
+    orch = Orchestrator(retriever=retriever)
+
+    print(f"question : {question}")
+    print()
+    answer = orch.answer(question)
+
+    if answer.abstained:
+        print("  ABSTAINED")
+        print(f"  reason  : {answer.abstain_reason}")
+        print(f"  says    : {answer.text}")
+        print(f"  because : {answer.trace.get('abstain_explanation')}")
+    else:
+        print("  ANSWERED")
+        print(f"  {answer.text}")
+        print()
+        for sentence in answer.sentences:
+            print(f"    - {sentence.text}")
+            print(f"      cites: {sentence.citation_ids}")
+        print()
+        print("  sources:")
+        for chunk in answer.citations:
+            print(f"    [{chunk.chunk_id}] {chunk.text[:90]}...")
+
+    retrieval = answer.trace.get("retrieval", {})
+    print()
+    print("  trace:")
+    print(f"    module B action  : {retrieval.get('action')}")
+    print(f"    corrective fired : {retrieval.get('corrective_fired')}")
+    print(f"    retrieval rounds : {retrieval.get('rounds')}")
+    if "repair" in answer.trace:
+        print(f"    module E         : {answer.trace['repair']}")
+    if "cost" in answer.trace:
+        print(f"    cost             : {answer.trace['cost']}")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run the full A-E pipeline on one question")
+    parser.add_argument("--query", required=True)
+    parser.add_argument("--demo", action="store_true")
+    args = parser.parse_args()
+    _demo(args.query)

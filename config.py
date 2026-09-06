@@ -160,15 +160,25 @@ class VerifierConfig:
 # --------------------------------------------------------------------------
 @dataclass(frozen=True)
 class RepairConfig:
+    # One regeneration attempt per failed sentence, then drop. An unbounded
+    # loop burns API budget and can oscillate between two equally unsupported
+    # phrasings of the same claim.
     max_repair_attempts: int = 1
-    # PLACEHOLDER — Phase 5 tunes these against coverage/accuracy tradeoff.
-    # Abstain outright when this fraction of sentences fails verification.
+    # Trigger (a). Abstain when more than this fraction of the drafted answer
+    # fails verification. Evaluated BEFORE repair: a draft that was mostly
+    # unsupported is not rescued by patching a sentence or two.
+    # Interacts with VerifierConfig.entailment_threshold - a stricter verifier
+    # raises the abstention rate - so Phase 6 varies both together.
     abstain_if_unsupported_fraction_above: float = 0.50
-    # Abstain when no retrieved chunk clears the evaluator at all.
+    # Trigger (b). Abstain before generation when Module B graded every
+    # retrieved chunk wrong. This fires before the one paid component is
+    # called, so such an abstention costs nothing.
     abstain_on_no_correct_chunk: bool = True
-    abstention_message: str = (
-        "I cannot answer this from the provided sources."
-    )
+    # Minimum surviving-answer condition. A single disconnected clause left
+    # behind by dropping is worse than a clean refusal.
+    min_surviving_sentences: int = 1
+    min_surviving_chars: int = 20
+    abstention_message: str = "I cannot answer this from the provided sources."
 
 
 # --------------------------------------------------------------------------
