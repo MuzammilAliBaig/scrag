@@ -1,0 +1,44 @@
+# Secrets - never in the build context, let alone a layer.
+.env
+.env.*
+!.env.example
+
+# Virtualenv and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.git/
+.github/
+
+# Large or rebuildable data. The demo corpus and the prebuilt index are the
+# only things under data/ that ship, and they are re-included below.
+data/*
+!data/demo/
+# data/indexes is NOT shipped: the demo index is built during the image build
+# by app/build_demo_index.py, which keeps it reproducible from a clean clone.
+data/indexes/
+data/alce/
+data/corpus/
+data/eval_labels/
+data/human_labels/
+data/models/
+data/splits/
+
+# Evaluation output - not needed at run time
+eval/results/
+eval/labeled/
+
+# Docs and notebooks
+*.md
+!README.md
+docs/
+notebooks/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

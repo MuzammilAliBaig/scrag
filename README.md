@@ -278,6 +278,31 @@ out-of-domain documents, so abstention falls to Modules C, D and E. The guarante
 just costs a generation call instead of being free. On in-distribution questions trigger (b) fires
 on 82.67% of unanswerable ones.
 
+## Docker
+
+```bash
+docker build -t scrag:latest .
+docker run -p 8000:8000 -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" scrag:latest
+docker compose up --build      # API on :8000, UI on :8501
+```
+
+**Measured image size: 3.6 GB.** torch alone is 773 MB installed and is unavoidable; `pyarrow` and
+`pandas` (156 + 76 MB) come from streamlit, not from the eval stack, so they stay while the UI
+ships in the same container. Installing torch from the PyTorch CPU index rather than PyPI is what
+keeps this from exceeding 6 GB.
+
+`requirements-runtime.txt` is what the image installs — it drops `datasets`, `matplotlib` and
+`pytest`, which are evaluation-only (3.73 GB → 3.6 GB).
+
+**No secret is ever baked in.** Verified, not assumed: zero layers mention `ANTHROPIC_API_KEY`, and
+a container started without `-e` has zero `ANTHROPIC*` variables in its environment. `.dockerignore`
+excludes `.env`, and that is checked with a throwaway build in `DEPLOY.md`.
+
+**The demo index is built during the image build**, not committed — so the first query is never a
+cold rebuild, and it stays reproducible from a clean clone.
+
+Deployment steps for Hugging Face Spaces and Render: **[DEPLOY.md](DEPLOY.md)**.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.

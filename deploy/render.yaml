@@ -1,0 +1,36 @@
+# Render free tier - API + UI as two services from one image.
+#
+# Free instances sleep after ~15 minutes idle and cold-start on the next
+# request. That is accepted (see DEPLOY.md); /ready and the UI warming banner
+# make it visible rather than confusing.
+#
+# ANTHROPIC_API_KEY is marked sync:false so it is NEVER stored in this file or
+# in git. Set it in the Render dashboard under Environment.
+
+services:
+  - type: web
+    name: scrag-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # set in the dashboard; never committed
+      - key: PORT
+        value: "8000"
+
+  - type: web
+    name: scrag-ui
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >
+      streamlit run app/ui.py --server.port=$PORT
+      --server.address=0.0.0.0 --server.headless=true
+    envVars:
+      - key: SCRAG_API_URL
+        # Replace with the public URL of scrag-api after its first deploy.
+        value: https://scrag-api.onrender.com

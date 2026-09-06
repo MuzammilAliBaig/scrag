@@ -1,0 +1,46 @@
+# Runtime-only dependencies: what the deployed app actually imports.
+#
+# requirements.txt is the development/evaluation set and is what CI installs.
+# This file is what the Docker image installs, because three of the heaviest
+# packages there are never used at run time:
+#
+#   datasets    - PopQA/ALCE loading, evaluation only (~10 MB, plus dill,
+#                 multiprocess, xxhash)
+#   matplotlib  - eval/plot_ablation.py only (~36 MB)
+#   pytest      - tests only
+#
+# pyarrow and pandas are NOT removable: streamlit depends on both, and the UI
+# ships in the same image because free tiers run one container.
+#
+# torch dominates at ~773 MB installed and is unavoidable for transformers.
+# The image installs it from the PyTorch CPU index, so no CUDA libraries are
+# pulled - that alone is the difference between ~3.7 GB and well over 6 GB.
+
+# --- App shell ---
+fastapi==0.141.1
+uvicorn==0.52.4
+pydantic==2.13.5
+python-multipart==0.0.32
+
+# --- Config / secrets ---
+python-dotenv==1.2.3
+
+# --- Generator: the one paid dependency (Module C) ---
+anthropic==1.4.0
+
+# --- Module A: chunking, embedding, vector search ---
+faiss-cpu==1.15.0
+sentence-transformers==6.0.1
+torch==2.14.0
+numpy==2.4.6
+
+# --- Modules B and D ---
+transformers==5.16.1
+sentencepiece==0.2.2
+protobuf==7.36.1
+tiktoken==0.14.0
+
+# --- UI ---
+streamlit==1.63.0
+pypdf==6.17.0
+requests==2.34.2

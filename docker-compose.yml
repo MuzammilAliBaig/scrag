@@ -1,0 +1,47 @@
+# Local API + UI.
+#
+#   docker compose up --build
+#
+# The key comes from the host environment, never from the image:
+#   PowerShell:  $env:ANTHROPIC_API_KEY = "sk-ant-..."
+#   bash:        export ANTHROPIC_API_KEY=sk-ant-...
+# or from a local .env, which is gitignored and dockerignored.
+
+services:
+  api:
+    build:
+      context: .
+      target: runtime
+    image: scrag:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # Empty default so compose does not fail when the variable is unset;
+      # the API then reports generation as unavailable rather than crashing.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      PORT: "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+    volumes:
+      # The fine-tuned Module B checkpoint is not in the image (it is not a
+      # public artifact). Mount it read-only if you have trained one.
+      - ./data/models:/home/scrag/app/data/models:ro
+
+  ui:
+    image: scrag:latest
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+    environment:
+      SCRAG_API_URL: "http://api:8000"
+    command: >
+      streamlit run app/ui.py
+      --server.port=8501
+      --server.address=0.0.0.0
+      --server.headless=true

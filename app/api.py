@@ -140,6 +140,58 @@ def health() -> HealthResponse:
     )
 
 
+@app.get("/ready")
+def ready() -> JSONResponse:
+    """Readiness, distinct from liveness.
+
+    A cold container answers /health immediately but cannot serve a query until
+    the embedding model is resident. Free-tier cold starts take tens of
+    seconds, and a warming app that looks identical to a hung one is the
+    difference between "slow" and "broken" to whoever is watching.
+
+    Returns 200 when a query can be served, 503 while warming.
+    """
+    retriever = get_retriever()
+    index_ready = retriever.size > 0
+    models_ready = retriever._model is not None
+
+    ready_now = index_ready and models_ready
+    return JSONResponse(
+        status_code=200 if ready_now else 503,
+        content={
+            "ready": ready_now,
+            "index_ready": index_ready,
+            "index_chunks": retriever.size,
+            "embedding_model_loaded": models_ready,
+            "detail": (
+                "ready"
+                if ready_now
+                else (
+                    "index is empty - load the demo corpus or upload documents"
+                    if not index_ready
+                    else "warming up: the embedding model is still loading"
+                )
+            ),
+        },
+    )
+
+
+@app.on_event("startup")
+def warm_up() -> None:
+    """Load the embedding model at startup rather than on the first query.
+
+    Without this the first visitor pays the model-load cost on top of the cold
+    start and assumes the app is broken. Failure here is logged, not fatal:
+    the app should still come up and report itself unready.
+    """
+    try:
+        retriever = get_retriever()
+        retriever.embed(["warm up"])
+        logger.info("warm-up complete: %d chunks indexed", retriever.size)
+    except Exception:                               # noqa: BLE001
+        logger.exception("warm-up failed; /ready will report not-ready")
+
+
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest(files: list[UploadFile] = File(...)) -> IngestResponse:
     """Upload documents, chunk, embed and index them. Per-file status.

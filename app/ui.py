@@ -69,6 +69,14 @@ with st.sidebar:
         )
         st.stop()
 
+    # Cold start on a free tier takes tens of seconds. Show it, so a warming
+    # app does not look like a hung one.
+    ready_code, ready = api_get("/ready")
+    if ready_code == 503:
+        st.warning(f"Warming up - {ready.get('detail', 'please wait')}")
+        if st.button("Check again", use_container_width=True):
+            st.rerun()
+
     if health.get("index_ready"):
         st.success(
             f"{health['index_chunks']:,} chunks from "
