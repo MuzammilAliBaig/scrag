@@ -15,9 +15,12 @@ venv/
 # Data, indexes, caches (all rebuildable or re-downloadable)
 data/indexes/
 data/corpus/
-data/alce/          # ~431 MB, re-downloadable from princeton-nlp/ALCE-data
-data/models/        # fine-tuned evaluator checkpoint (~570 MB)
-data/human_labels/  # annotator output; keep local until deliberately shared
+# ALCE eval data, ~431 MB, re-downloadable from princeton-nlp/ALCE-data
+data/alce/
+# fine-tuned evaluator checkpoint, ~570 MB, reproducible from train/
+data/models/
+# annotator output; keep local until deliberately shared
+data/human_labels/
 *.faiss
 *.index
 
