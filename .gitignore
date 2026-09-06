@@ -12,9 +12,12 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
-# Data, indexes, caches (Module A artefacts are rebuildable)
+# Data, indexes, caches (all rebuildable or re-downloadable)
 data/indexes/
 data/corpus/
+data/alce/          # ~431 MB, re-downloadable from princeton-nlp/ALCE-data
+data/models/        # fine-tuned evaluator checkpoint (~570 MB)
+data/human_labels/  # annotator output; keep local until deliberately shared
 *.faiss
 *.index
 
