@@ -24,7 +24,7 @@ evaluator. Everything else reproduces published work.
 | A | `core/retriever.py` | Chunk, embed, store in FAISS | **built** (Phase 1) |
 | B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | **built** (Phase 2) |
 | C | `core/generator.py` | Generate answer, one citation per sentence | **built** (Phase 3) |
-| D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | stub (Phase 4) |
+| D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | **built** (Phase 4) |
 | E | `core/repair.py` | Regenerate, drop, or abstain | stub (Phase 5) |
 | — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | stub |
 
@@ -158,6 +158,35 @@ A sentence that cannot be attributed is **left flagged, never repaired by guessi
 chunk. Attaching a plausible source to an unsupported claim is the exact failure this project
 exists to prevent.
 
+## Module D — NLI citation verifier
+
+The cited chunk is the **premise**, the sentence is the **hypothesis**. Runs locally on CPU, so
+verification costs nothing however many sentences are checked.
+
+```bash
+python -m core.verifier --demo                  # per-sentence pass/fail on a worked example
+python -m eval.calibrate_verifier --limit 200   # threshold sweep on a labeled slice
+python -m eval.run_verifier_bench --limit 200   # flag rate on real answers
+```
+
+**Independence is the point.** The generator wrote the sentence *and* chose its citation, so
+checking with the same model would be self-marking. Module D is a separate checkpoint —
+`MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`, chosen because FEVER is fact-verification against
+Wikipedia evidence — and it is never the generator LLM.
+
+**Neutral is not contradiction.** Neutral means the passage does not support the sentence;
+contradiction means it says the opposite. Both fail the gate, but the logs keep them apart: neutral
+usually means retrieval failed, contradiction means generation did.
+
+**Label order is read from the checkpoint, never hardcoded.** This model is
+(entailment, neutral, contradiction); the `cross-encoder/nli-*` family is
+(contradiction, entailment, neutral). Hardcoding either silently inverts every verdict while
+everything still appears to work.
+
+**Multi-citation policy: `concat`** — all cited chunks are joined into one premise and must
+*jointly* support the sentence, matching ALCE citation recall. Measured against the `any` policy the
+difference was 0.2033 vs 0.2057 flag rate, i.e. immaterial on this data.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
@@ -189,6 +218,13 @@ Measured, from runs that actually executed:
 | abstention rate | 21/200 (10.5%) |
 | ASQA str-EM | 0.4743 |
 | measured cost | $2.18 for 200 questions ($0.0109 each) |
+| **Module D** (same 200 answers, 418 sentences) | |
+| verdicts issued | **418/418 — gate PASS** |
+| calibrated threshold | **0.20** (P 0.9310 / R 0.7980 / F1 0.8594 on a 600-pair slice) |
+| positive/negative separation | +0.6604 |
+| flag rate on real answers | **0.2033** (85 sentences) |
+| of which contradictions | 27 (6.5%) — generation failures |
+| neutral | 83 (19.9%) — mostly retrieval failures |
 
 Still unmeasured: the **Phase 1 baseline** (answer accuracy, faithfulness, per-query cost on
 PopQA). The key is now set, so `python -m eval.run_baseline --split dev --limit 200` will close it.

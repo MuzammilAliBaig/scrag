@@ -87,6 +87,21 @@ class CitedDraft:
         return sum(s.parseable for s in self.sentences) / len(self.sentences)
 
 
+class NLILabel(str, Enum):
+    """Raw NLI decision, kept distinct from the pass/fail gate.
+
+    Neutral is not contradiction. Neutral means the passage does not support
+    the sentence; contradiction means it says the opposite. Both fail the gate,
+    but the difference separates a retrieval failure (nothing relevant was
+    retrieved) from a generation failure (the model wrote something the
+    passage refutes).
+    """
+
+    ENTAILMENT = "entailment"
+    NEUTRAL = "neutral"
+    CONTRADICTION = "contradiction"
+
+
 @dataclass(frozen=True)
 class SentenceVerdict:
     """Module D output, one per sentence."""
@@ -95,6 +110,14 @@ class SentenceVerdict:
     supported: bool
     entailment_score: float
     supporting_chunk_id: str | None = None
+    nli_label: NLILabel = NLILabel.NEUTRAL
+    # Score per cited chunk, so Phase 5 can drop the weakest citation rather
+    # than the whole sentence.
+    per_citation: dict[str, float] = field(default_factory=dict)
+    policy: str = "concat"
+    # True when the sentence carried no resolvable citation at all: there was
+    # nothing to verify, which is a Module C failure, not a Module D one.
+    uncited: bool = False
 
 
 @dataclass(frozen=True)
@@ -104,6 +127,17 @@ class VerificationReport:
     @property
     def unsupported(self) -> list[SentenceVerdict]:
         return [v for v in self.verdicts if not v.supported]
+
+    @property
+    def contradicted(self) -> list[SentenceVerdict]:
+        """Sentences a cited passage actively refutes - generation failures."""
+        return [v for v in self.verdicts if v.nli_label is NLILabel.CONTRADICTION]
+
+    @property
+    def flag_rate(self) -> float:
+        if not self.verdicts:
+            return 0.0
+        return len(self.unsupported) / len(self.verdicts)
 
     @property
     def all_supported(self) -> bool:

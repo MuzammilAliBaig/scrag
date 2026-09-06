@@ -124,11 +124,35 @@ class GeneratorConfig:
 # --------------------------------------------------------------------------
 @dataclass(frozen=True)
 class VerifierConfig:
-    nli_model: str = "cross-encoder/nli-deberta-v3-small"
+    # Trained on MNLI + FEVER + ANLI. FEVER is fact verification against
+    # Wikipedia evidence, which is exactly this task: does this passage support
+    # this claim. Plain MNLI cross-encoders are weaker on evidence-style pairs.
+    nli_model: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+    # Label order differs between NLI checkpoints - this one is
+    # (entailment, neutral, contradiction) while the cross-encoder/nli-* family
+    # is (contradiction, entailment, neutral). Never hardcode an index; the
+    # verifier reads id2label off the loaded model.
     max_length: int = 512
-    # PLACEHOLDER — Phase 4 sets this from a measured P/R curve.
-    entailment_threshold: float = 0.50
+    # CALIBRATED by eval/calibrate_verifier.py on a 600-pair labeled slice
+    # (203 lexically-verified positives, 397 different-question negatives).
+    # 0.20 is the best-F1 operating point: precision 0.9310, recall 0.7980,
+    # F1 0.8594, with 12 unsupported pairs passing and 41 supported pairs
+    # flagged. The full sweep is in eval/results/verifier_calibration.json;
+    # Phase 5 may revisit it once the coverage cost of false flags is known.
+    entailment_threshold: float = 0.20
+    threshold_is_calibrated: bool = True
     batch_size: int = 16
+    # Multi-citation policy. "concat" joins every cited chunk into one premise
+    # and asks whether they JOINTLY support the sentence, matching ALCE
+    # citation recall. "any" passes if a single chunk entails it, which is more
+    # permissive and lets a model pad citations for free.
+    multi_citation_policy: str = "concat"
+    # Cap on concatenated premise length, so a 5-chunk concat cannot silently
+    # truncate away the chunk that actually mattered.
+    max_premise_chars: int = 4000
+    verdict_log_path: Path = field(
+        default_factory=lambda: REPO_ROOT / "eval" / "results" / "verdicts.jsonl"
+    )
 
 
 # --------------------------------------------------------------------------

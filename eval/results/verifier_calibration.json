@@ -1,0 +1,227 @@
+{
+  "checkpoint": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+  "slice": {
+    "pairs": 600,
+    "positives_lexical": 203,
+    "negatives_swap": 397,
+    "questions": 200,
+    "label_provenance": {
+      "positive_lexical": "gold ALCE short answer appears in BOTH the sentence and the cited passage; lexical, not human-labeled; recall is a lower bound",
+      "negative_swap": "passage retrieved for a different question; near-certain unsupported"
+    },
+    "not_used": "the generator's own citation choices as positives - circular, since their correctness is what Module D exists to decide"
+  },
+  "sweep": [
+    {
+      "threshold": 0.05,
+      "precision": 0.7807,
+      "recall": 0.8768,
+      "f1": 0.826,
+      "missed_hallucinations": 50,
+      "false_flags": 25,
+      "tp": 178,
+      "tn": 347
+    },
+    {
+      "threshold": 0.1,
+      "precision": 0.8571,
+      "recall": 0.8571,
+      "f1": 0.8571,
+      "missed_hallucinations": 29,
+      "false_flags": 29,
+      "tp": 174,
+      "tn": 368
+    },
+    {
+      "threshold": 0.15,
+      "precision": 0.8824,
+      "recall": 0.8128,
+      "f1": 0.8462,
+      "missed_hallucinations": 22,
+      "false_flags": 38,
+      "tp": 165,
+      "tn": 375
+    },
+    {
+      "threshold": 0.2,
+      "precision": 0.931,
+      "recall": 0.798,
+      "f1": 0.8594,
+      "missed_hallucinations": 12,
+      "false_flags": 41,
+      "tp": 162,
+      "tn": 385
+    },
+    {
+      "threshold": 0.25,
+      "precision": 0.9302,
+      "recall": 0.7882,
+      "f1": 0.8533,
+      "missed_hallucinations": 12,
+      "false_flags": 43,
+      "tp": 160,
+      "tn": 385
+    },
+    {
+      "threshold": 0.3,
+      "precision": 0.9345,
+      "recall": 0.7734,
+      "f1": 0.8464,
+      "missed_hallucinations": 11,
+      "false_flags": 46,
+      "tp": 157,
+      "tn": 386
+    },
+    {
+      "threshold": 0.35,
+      "precision": 0.9333,
+      "recall": 0.7586,
+      "f1": 0.837,
+      "missed_hallucinations": 11,
+      "false_flags": 49,
+      "tp": 154,
+      "tn": 386
+    },
+    {
+      "threshold": 0.4,
+      "precision": 0.9383,
+      "recall": 0.7488,
+      "f1": 0.8329,
+      "missed_hallucinations": 10,
+      "false_flags": 51,
+      "tp": 152,
+      "tn": 387
+    },
+    {
+      "threshold": 0.45,
+      "precision": 0.9363,
+      "recall": 0.7241,
+      "f1": 0.8167,
+      "missed_hallucinations": 10,
+      "false_flags": 56,
+      "tp": 147,
+      "tn": 387
+    },
+    {
+      "threshold": 0.5,
+      "precision": 0.9351,
+      "recall": 0.7094,
+      "f1": 0.8067,
+      "missed_hallucinations": 10,
+      "false_flags": 59,
+      "tp": 144,
+      "tn": 387
+    },
+    {
+      "threshold": 0.55,
+      "precision": 0.9396,
+      "recall": 0.6897,
+      "f1": 0.7955,
+      "missed_hallucinations": 9,
+      "false_flags": 63,
+      "tp": 140,
+      "tn": 388
+    },
+    {
+      "threshold": 0.6,
+      "precision": 0.9388,
+      "recall": 0.6798,
+      "f1": 0.7886,
+      "missed_hallucinations": 9,
+      "false_flags": 65,
+      "tp": 138,
+      "tn": 388
+    },
+    {
+      "threshold": 0.65,
+      "precision": 0.9437,
+      "recall": 0.6601,
+      "f1": 0.7768,
+      "missed_hallucinations": 8,
+      "false_flags": 69,
+      "tp": 134,
+      "tn": 389
+    },
+    {
+      "threshold": 0.7,
+      "precision": 0.9424,
+      "recall": 0.6453,
+      "f1": 0.7661,
+      "missed_hallucinations": 8,
+      "false_flags": 72,
+      "tp": 131,
+      "tn": 389
+    },
+    {
+      "threshold": 0.75,
+      "precision": 0.9556,
+      "recall": 0.6355,
+      "f1": 0.7633,
+      "missed_hallucinations": 6,
+      "false_flags": 74,
+      "tp": 129,
+      "tn": 391
+    },
+    {
+      "threshold": 0.8,
+      "precision": 0.9535,
+      "recall": 0.6059,
+      "f1": 0.741,
+      "missed_hallucinations": 6,
+      "false_flags": 80,
+      "tp": 123,
+      "tn": 391
+    },
+    {
+      "threshold": 0.85,
+      "precision": 0.9593,
+      "recall": 0.5813,
+      "f1": 0.7239,
+      "missed_hallucinations": 5,
+      "false_flags": 85,
+      "tp": 118,
+      "tn": 392
+    },
+    {
+      "threshold": 0.9,
+      "precision": 0.9658,
+      "recall": 0.5567,
+      "f1": 0.7062,
+      "missed_hallucinations": 4,
+      "false_flags": 90,
+      "tp": 113,
+      "tn": 393
+    },
+    {
+      "threshold": 0.95,
+      "precision": 0.981,
+      "recall": 0.5074,
+      "f1": 0.6688,
+      "missed_hallucinations": 2,
+      "false_flags": 100,
+      "tp": 103,
+      "tn": 395
+    }
+  ],
+  "recommended": {
+    "threshold": 0.2,
+    "precision": 0.931,
+    "recall": 0.798,
+    "f1": 0.8594,
+    "missed_hallucinations": 12,
+    "false_flags": 41,
+    "tp": 162,
+    "tn": 385
+  },
+  "separation": {
+    "positive_mean": 0.7018,
+    "negative_mean": 0.0414,
+    "difference": 0.6604
+  },
+  "nli_label_counts": {
+    "entailment": 157,
+    "neutral": 407,
+    "contradiction": 36
+  },
+  "elapsed_s": 113.6
+}
