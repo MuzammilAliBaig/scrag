@@ -1,0 +1,21 @@
+{
+  "source": "cached Phase 3 answers (ALCE/ASQA)",
+  "api_cost_usd": 0.0,
+  "checkpoint": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+  "threshold": 0.2,
+  "policy": "concat",
+  "questions_scored": 200,
+  "skipped_not_cached": 0,
+  "mean_citations_per_sentence": 1.3123,
+  "citation_recall": 0.8388,
+  "citation_precision": 0.7409,
+  "sentences_scored": 397,
+  "citations_scored": 521,
+  "supported_sentences": 333,
+  "precise_citations": 386,
+  "hallucination_rate_auto": 0.1612,
+  "contradiction_rate_auto": 0.068,
+  "sentences": 397,
+  "alce_baseline": "NOT AVAILABLE - not recorded in this project. Also a different entailment model than ALCE's TRUE/T5-XXL, so not like-for-like regardless.",
+  "elapsed_s": 142.4
+}

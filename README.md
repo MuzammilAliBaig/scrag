@@ -213,6 +213,32 @@ instead. A stub is worse than a clean refusal.
 **Trigger (b) costs nothing.** When Module B grades every retrieved chunk wrong, the pipeline stops
 before the generator is called, so that abstention is free.
 
+## The ablation — the report's key figure
+
+```bash
+python -m eval.run_ablation --all --split dev --limit 150 --dry-run  # price it first
+python -m eval.run_ablation --all --split dev --limit 150            # PAID
+python -m eval.plot_ablation
+```
+
+Variants are `PipelineFlags` over **one** `Orchestrator` (`eval/variants.py`). Five forked
+pipelines drift, and drifted variants stop measuring what they claim to.
+
+| Variant | Adds |
+|---|---|
+| A | Module A only — the Phase 1 baseline |
+| B | + Module B grading and corrective retrieval |
+| C | + Module C citation forcing |
+| D | + Module D verification (**flags only — same text as C by construction**) |
+| E | + Module E repair and abstention |
+
+Generation goes through the **Message Batches API** at 50% pricing, keyed by `custom_id` because
+batch results return in any order. `--dry-run` prices the sweep with `count_tokens` before anything
+launches.
+
+**Empty cells stay empty.** A baseline figure without a paper and a table behind it is left blank —
+the ALCE citation cells are blank for exactly this reason, and a test asserts it.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
@@ -250,12 +276,17 @@ Measured, from runs that actually executed:
 | positive/negative separation | +0.6604 |
 | flag rate on real answers | **0.2033** (85 sentences) |
 | of which contradictions | 27 (6.5%) — generation failures |
+| **Citation P/R** (entailment, 397 sentences, free) | |
+| citation recall | **0.8388** |
+| citation precision | **0.7409** |
+| mean citations per sentence | 1.31 |
+| hallucination rate (auto, verifier-derived) | 0.1612 |
 | neutral | 83 (19.9%) — mostly retrieval failures |
 | **Module E** (PopQA dev, 150+150, retrieval+grading only) | |
 | trigger (b) on *unanswerable* questions | **0.8267** (124/150) — caught free, before generation |
 | trigger (b) on *answerable* questions | 0.0267 (4/150) — not over-abstaining |
 | corrective loop, answerable | 0.1733 |
-| Tests | **110 passed** |
+| Tests | **133 passed** |
 
 **Blocked on API credit.** The account ran out mid-Phase-5:
 `400 invalid_request_error: Your credit balance is too low`. Still unmeasured as a result:

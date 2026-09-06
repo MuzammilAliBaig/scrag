@@ -26,7 +26,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 import config
-from core.types import Chunk
+from core.types import Chunk, CitedSentence
 
 # --------------------------------------------------------------------------
 # Answer accuracy - local, free
@@ -238,3 +238,149 @@ def retrieval_hit(gold_answers: list[str], context: list[Chunk]) -> bool:
     """
     joined = normalize_answer(" ".join(c.text for c in context))
     return any(normalize_answer(g) in joined for g in gold_answers if g.strip())
+
+
+# --------------------------------------------------------------------------
+# Citation precision / recall - ALCE definitions, computed by entailment
+# --------------------------------------------------------------------------
+#
+# Phase 3 could only report a word-overlap proxy, because entailment is Module
+# D and did not exist yet. With Module D built these are the real ALCE-style
+# quantities:
+#
+#   citation RECALL    - of the sentences that make a claim, how many are
+#                        entailed by the set of passages they cite. A sentence
+#                        whose citations do not support it counts against
+#                        recall even if it cites something.
+#
+#   citation PRECISION - of the individual citations attached, how many
+#                        actually contribute. ALCE calls a citation precise
+#                        when the cited passage supports the sentence on its
+#                        own OR is necessary to the joint support; here a
+#                        citation counts as precise when it individually
+#                        entails the sentence, which is the stricter reading
+#                        and the one that penalises citation padding.
+#
+# These are OUR implementation of ALCE's definitions using a different
+# entailment model (ALCE uses TRUE/T5-XXL). Report them as such, never as
+# ALCE's published numbers.
+
+
+@dataclass
+class CitationScores:
+    recall: float | None
+    precision: float | None
+    sentences_scored: int
+    citations_scored: int
+    supported_sentences: int
+    precise_citations: int
+
+    def as_dict(self) -> dict:
+        return {
+            "citation_recall": round(self.recall, 4) if self.recall is not None else None,
+            "citation_precision": (
+                round(self.precision, 4) if self.precision is not None else None
+            ),
+            "sentences_scored": self.sentences_scored,
+            "citations_scored": self.citations_scored,
+            "supported_sentences": self.supported_sentences,
+            "precise_citations": self.precise_citations,
+        }
+
+
+def citation_precision_recall(
+    drafts_and_reports: list[tuple[list[CitedSentence], list, list[Chunk]]],
+    threshold: float,
+) -> CitationScores:
+    """Citation P/R over a set of (sentences, verdicts, context) triples.
+
+    `verdicts` must come from Module D with per-citation scores populated, so
+    this function does no model work of its own and can be applied to any
+    already-verified run.
+    """
+    sentences_scored = 0
+    supported = 0
+    citations_scored = 0
+    precise = 0
+
+    for sentences, verdicts, _context in drafts_and_reports:
+        for verdict in verdicts:
+            # A refusal makes no claim, so it is neither supported nor
+            # unsupported - excluded rather than scored zero.
+            if verdict.uncited and not verdict.sentence.citation_ids:
+                continue
+            sentences_scored += 1
+            if verdict.supported:
+                supported += 1
+            for _cid, score in (verdict.per_citation or {}).items():
+                citations_scored += 1
+                if score >= threshold:
+                    precise += 1
+
+    return CitationScores(
+        recall=supported / sentences_scored if sentences_scored else None,
+        precision=precise / citations_scored if citations_scored else None,
+        sentences_scored=sentences_scored,
+        citations_scored=citations_scored,
+        supported_sentences=supported,
+        precise_citations=precise,
+    )
+
+
+# --------------------------------------------------------------------------
+# Hallucination rate
+# --------------------------------------------------------------------------
+
+
+def hallucination_rate_automatic(verdicts: list) -> dict:
+    """Automatic proxy for hallucination rate, from Module D verdicts.
+
+    A sentence counts as hallucinated when it asserts something no cited
+    passage supports. Contradictions are counted separately: a passage that
+    *refutes* the sentence is a stronger signal than one that merely fails to
+    support it.
+
+    This is a proxy. It measures disagreement between the generator and the NLI
+    checkpoint, not ground truth, and it inherits every error the verifier
+    makes. The hand-labeled set (eval/LABELING_HALLUCINATION.md) exists to
+    bound that gap; until it has been labeled, report this number as
+    "automatic, verifier-derived" and never as a human-verified hallucination
+    rate.
+    """
+    scored = [v for v in verdicts if not (v.uncited and not v.sentence.citation_ids)]
+    if not scored:
+        return {
+            "hallucination_rate_auto": None,
+            "contradiction_rate_auto": None,
+            "sentences": 0,
+        }
+    unsupported = sum(1 for v in scored if not v.supported)
+    contradicted = sum(
+        1 for v in scored if getattr(v.nli_label, "value", v.nli_label) == "contradiction"
+    )
+    return {
+        "hallucination_rate_auto": round(unsupported / len(scored), 4),
+        "contradiction_rate_auto": round(contradicted / len(scored), 4),
+        "sentences": len(scored),
+    }
+
+
+def hallucination_rate_labeled(rows: list[dict]) -> dict:
+    """Hallucination rate against the hand-labeled set.
+
+    `rows` are entries from eval/labeled/*.jsonl carrying a human `label` of
+    "supported" or "hallucinated". Returns None when the set is empty, rather
+    than a zero that would read as a perfect score.
+    """
+    labeled = [r for r in rows if r.get("label") in {"supported", "hallucinated"}]
+    if not labeled:
+        return {
+            "hallucination_rate_labeled": None,
+            "n_labeled": 0,
+            "note": "hand-labeled set is empty - see eval/LABELING_HALLUCINATION.md",
+        }
+    hallucinated = sum(1 for r in labeled if r["label"] == "hallucinated")
+    return {
+        "hallucination_rate_labeled": round(hallucinated / len(labeled), 4),
+        "n_labeled": len(labeled),
+    }

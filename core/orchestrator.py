@@ -163,16 +163,25 @@ class Orchestrator:
 
         report = self.verifier.verify(draft)          # Module D - Phase 4
         if not self.flags.repair_and_abstain:
+            # Variant D: Module D measures but does not alter the answer, so the
+            # text here is identical to variant C by construction. The verdicts
+            # are carried in the trace for citation P/R and hallucination rate.
             return FinalAnswer(
                 question=question,
-                text=draft.raw_text,
+                text=draft.raw_text or " ".join(s.text for s in draft.sentences),
                 sentences=draft.sentences,
                 citations=context,
-                trace={"retrieval": trace.as_dict(), "verified": report.all_supported},
+                trace={
+                    "retrieval": trace.as_dict(),
+                    "verified": report.all_supported,
+                    "verdicts": report.verdicts,
+                    "flag_rate": report.flag_rate,
+                },
             )
 
         final = self.repairer.repair(draft, report)   # Module E - Phase 5
         final.trace.setdefault("retrieval", trace.as_dict())
+        final.trace.setdefault("verdicts", report.verdicts)
         return final
 
 
