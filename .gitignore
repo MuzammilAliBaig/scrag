@@ -1,0 +1,31 @@
+# Secrets — never commit. See tech-stack.md.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Data, indexes, caches (Module A artefacts are rebuildable)
+data/indexes/
+data/corpus/
+*.faiss
+*.index
+
+# Model + API caches
+.cache/
+.hf_cache/
+models/
+eval/results/.api_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

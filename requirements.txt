@@ -1,0 +1,27 @@
+# SCRAG dependencies. CPU-only wheels, Python 3.11.
+# Versions below were checked against PyPI with `pip index versions`, not guessed.
+
+# --- App shell ---
+fastapi==0.141.1
+uvicorn==0.52.4
+pydantic==2.13.5
+
+# --- Config / secrets ---
+python-dotenv==1.2.3
+
+# --- Generator: the one paid dependency (Module C, Phase 3) ---
+# Official SDK only. Never an OpenAI-compatible shim.
+anthropic==1.4.0
+
+# --- Tests ---
+pytest==9.1.1
+httpx==0.28.1          # required by fastapi.testclient
+
+# --- Added in later phases, deliberately not installed yet ---
+# Phase 0 must start fast and offline, so the ~2 GB torch stack stays out
+# until Module A needs it. Versions verified available for cp311:
+#   faiss-cpu==1.15.0             # Phase 1, Module A
+#   sentence-transformers==6.0.1  # Phase 1, Module A
+#   torch==2.14.0                 # CPU wheel, pulled by the two above
+#   numpy==2.4.6
+#   transformers==5.16.1          # Phase 2 (Module B), Phase 4 (Module D)
