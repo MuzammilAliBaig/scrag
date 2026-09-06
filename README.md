@@ -21,9 +21,9 @@ evaluator. Everything else reproduces published work.
 
 | Module | File | Responsibility | Status |
 |---|---|---|---|
-| A | `core/retriever.py` | Chunk, embed, store in FAISS | stub (Phase 1) |
+| A | `core/retriever.py` | Chunk, embed, store in FAISS | **built** (Phase 1) |
 | B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | stub (Phase 2) |
-| C | `core/generator.py` | Generate answer, one citation per sentence | stub (Phase 3) |
+| C | `core/generator.py` | Generate answer, one citation per sentence | plain generator built; citations Phase 3 |
 | D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | stub (Phase 4) |
 | E | `core/repair.py` | Regenerate, drop, or abstain | stub (Phase 5) |
 | — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | stub |
@@ -84,10 +84,43 @@ tests/        Unit tests per module
 config.py     Every tunable
 ```
 
+## Evaluation
+
+PopQA ships questions but no corpus, so Module A indexes Wikipedia lead sections for each
+question's subject entity plus a pool of unrelated entities as distractors. Without the
+distractors retrieval is near-trivial and the baseline flatters itself.
+
+```bash
+python -m eval.build_index --split dev --limit 200   # free: Wikipedia + local CPU embedding
+python -m eval.check_retrieval --split dev           # free: retrieval hit rate, no API key
+python -m eval.run_baseline --split dev --limit 200  # PAID: calls the Claude API
+```
+
+The split is seeded (`SEED = 42`) and written to `data/splits/`. Every later phase evaluates
+against these exact question ids; resampling invalidates the whole A-E ablation.
+
+Faithfulness uses the **RAGAS definition** (claims entailed by context / total claims) with our
+own implementation calling Claude directly. RAGAS the library hard-requires `openai`, `langchain`
+and `langchain_openai`, which this project does not take on. Report it as
+"RAGAS-definition faithfulness, own implementation" — it is not a RAGAS number.
+
 ## Build status
 
-Phase 0 complete: `python -m app` starts, `pytest -q` passes 4/4, `/health` returns 200.
-Next gate — **Phase 1**: an end-to-end answer on PopQA with a logged baseline (accuracy and RAGAS
-faithfulness), using Module A plus a plain generator.
+**Phase 0 complete.** `python -m app` starts, `/health` returns 200.
+
+**Phase 1 partially complete.** Module A is built and measured; generation is blocked on an API key.
+
+Measured, from runs that actually executed:
+
+| Measurement | Value |
+|---|---|
+| Corpus | 990 Wikipedia documents, 1,612 chunks |
+| Retrieval hit rate @ k=5 | **0.870** |
+| Top-1 hit rate | **0.800** |
+| Index build | 340 s, CPU |
+| Tests | 21 passed |
+
+Not yet measured, because `ANTHROPIC_API_KEY` is unset: baseline answer accuracy, faithfulness,
+and per-query cost. The Phase 1 gate is not met until those exist.
 
 Phase prompts and the checklist live in `Major-Project/version 1/`.

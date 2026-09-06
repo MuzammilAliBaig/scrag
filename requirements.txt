@@ -9,19 +9,27 @@ pydantic==2.13.5
 # --- Config / secrets ---
 python-dotenv==1.2.3
 
-# --- Generator: the one paid dependency (Module C, Phase 3) ---
+# --- Generator: the one paid dependency (Module C) ---
 # Official SDK only. Never an OpenAI-compatible shim.
 anthropic==1.4.0
 
+# --- Module A: chunking, embedding, vector search (Phase 1) ---
+faiss-cpu==1.15.0
+sentence-transformers==6.0.1
+torch==2.14.0               # resolves to the +cpu wheel on Windows/PyPI
+numpy==2.4.6
+
+# --- Datasets: PopQA (Phase 1) ---
+datasets==5.0.1
+
+# --- Modules B and D: DeBERTa evaluator, NLI verifier (Phases 2 and 4) ---
+transformers==5.16.1
+
 # --- Tests ---
 pytest==9.1.1
-httpx==0.28.1          # required by fastapi.testclient
+httpx==0.28.1               # required by fastapi.testclient
 
-# --- Added in later phases, deliberately not installed yet ---
-# Phase 0 must start fast and offline, so the ~2 GB torch stack stays out
-# until Module A needs it. Versions verified available for cp311:
-#   faiss-cpu==1.15.0             # Phase 1, Module A
-#   sentence-transformers==6.0.1  # Phase 1, Module A
-#   torch==2.14.0                 # CPU wheel, pulled by the two above
-#   numpy==2.4.6
-#   transformers==5.16.1          # Phase 2 (Module B), Phase 4 (Module D)
+# Deliberately NOT taken:
+#   ragas - hard-depends on openai, langchain, langchain_openai and instructor.
+#   Faithfulness uses the RAGAS definition with our own implementation calling
+#   the anthropic SDK directly (eval/metrics.py). See tech-stack.md.

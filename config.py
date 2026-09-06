@@ -85,6 +85,16 @@ class GeneratorConfig:
     citation_pattern: str = r"\[(\d+)\]"
     request_timeout_s: float = 120.0
     max_retries: int = 3
+    effort: str = "high"          # low | medium | high | xhigh | max
+    # Opus 5 list price, USD per 1M tokens. Used to price a run from measured
+    # usage rather than from an assumption.
+    price_input_per_mtok: float = 5.00
+    price_output_per_mtok: float = 25.00
+    price_cache_write_per_mtok: float = 6.25   # 1.25x input, 5-minute TTL
+    price_cache_read_per_mtok: float = 0.50    # 0.1x input
+    # Opus 5 will not create a cache entry below this prefix length. Shorter
+    # prefixes fail silently, so the runner reports the measured value.
+    min_cacheable_prefix_tokens: int = 512
 
 
 # --------------------------------------------------------------------------
@@ -161,3 +171,64 @@ def summary() -> dict[str, object]:
         "generator_model": GENERATOR.model,
         "top_k": RETRIEVAL.top_k,
     }
+
+
+# --------------------------------------------------------------------------
+# Corpus construction (Phase 1)
+#
+# PopQA ships questions and answers but no document corpus, so Module A indexes
+# Wikipedia lead sections for the entities the questions ask about, plus a pool
+# of unrelated entities as distractors. Without distractors retrieval is
+# near-trivial and the baseline flatters itself.
+# --------------------------------------------------------------------------
+@dataclass(frozen=True)
+class CorpusConfig:
+    wikipedia_api: str = "https://en.wikipedia.org/w/api.php"
+    # Wikipedia asks for a descriptive UA with contact info on API clients.
+    user_agent: str = "SCRAG-research/0.1 (academic RAG project)"
+    titles_per_request: int = 20
+    max_chars_per_doc: int = 6000
+    request_timeout_s: float = 30.0
+    retry_attempts: int = 5
+    # Wikipedia returns 429 readily for anonymous clients; pace politely.
+    backoff_base_s: float = 5.0
+    delay_between_batches_s: float = 1.0
+    # Entities from questions outside the eval split, indexed purely as noise.
+    distractor_pool_size: int = 800
+    corpus_path: Path = field(default_factory=lambda: DATA_DIR / "corpus" / "wikipedia.jsonl")
+
+
+# --------------------------------------------------------------------------
+# Datasets and eval splits (Phase 1)
+# --------------------------------------------------------------------------
+@dataclass(frozen=True)
+class DatasetConfig:
+    popqa_hf_id: str = "akariasai/PopQA"
+    popqa_hf_split: str = "test"      # PopQA ships one split upstream
+    # Our own seeded carve-up of it. Every phase from here on uses these exact
+    # ids; resampling invalidates the whole ablation.
+    dev_size: int = 500
+    test_size: int = 1000
+    splits_dir: Path = field(default_factory=lambda: DATA_DIR / "splits")
+    embedding_cache_path: Path = field(default_factory=lambda: DATA_DIR / "indexes" / "embeddings.npy")
+
+
+# --------------------------------------------------------------------------
+# Evaluation harness (Phase 1 baseline; extended in Phase 6)
+# --------------------------------------------------------------------------
+@dataclass(frozen=True)
+class EvalConfig:
+    results_dir: Path = field(default_factory=lambda: REPO_ROOT / "eval" / "results")
+    default_limit: int = 200
+    # Faithfulness is measured with the RAGAS definition (claims entailed by
+    # retrieved context / total claims) but our own implementation, calling
+    # Claude directly. RAGAS itself hard-depends on openai + langchain, which
+    # this project does not take. Report it as such - it is not RAGAS output.
+    faithfulness_model: str = "claude-opus-5"
+    faithfulness_max_claims: int = 12
+    faithfulness_effort: str = "medium"
+
+
+CORPUS = CorpusConfig()
+DATASET = DatasetConfig()
+EVAL = EvalConfig()

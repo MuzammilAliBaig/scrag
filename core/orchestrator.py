@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from core.evaluator import RetrievalEvaluator
-from core.generator import CitationGenerator
+from core.generator import PlainGenerator
 from core.repair import Repairer
 from core.retriever import Retriever
 from core.types import FinalAnswer
@@ -37,14 +37,14 @@ class Orchestrator:
         self,
         retriever: Retriever | None = None,
         evaluator: RetrievalEvaluator | None = None,
-        generator: CitationGenerator | None = None,
+        generator: PlainGenerator | None = None,
         verifier: NLIVerifier | None = None,
         repairer: Repairer | None = None,
         flags: PipelineFlags | None = None,
     ) -> None:
         self.retriever = retriever or Retriever()
         self.evaluator = evaluator or RetrievalEvaluator()
-        self.generator = generator or CitationGenerator()
+        self.generator = generator or PlainGenerator()
         self.verifier = verifier or NLIVerifier()
         self.repairer = repairer or Repairer()
         self.flags = flags or PipelineFlags()

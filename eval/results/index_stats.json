@@ -1,0 +1,9 @@
+{
+  "documents": 990,
+  "chunks": 1612,
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "chunk_size": 800,
+  "chunk_overlap": 120,
+  "seed": 42,
+  "elapsed_s": 340.0
+}

@@ -1,0 +1,1612 @@
+{
+  "split": "dev",
+  "n": 200,
+  "k": 5,
+  "retrieval_hit_rate": 0.87,
+  "top1_hit_rate": 0.8,
+  "corpus_chunks": 1612,
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "elapsed_s": 14.9,
+  "examples": [
+    {
+      "qid": "236106",
+      "question": "Who was the composer of Easy Living?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Easy_Living_(1937_film)::0",
+      "top_score": 0.7229
+    },
+    {
+      "qid": "2963470",
+      "question": "Who is the father of Æthelburh of Wilton?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Edward_of_Middleham,_Prince_of_Wales::0",
+      "top_score": 0.6904
+    },
+    {
+      "qid": "2647037",
+      "question": "Who was the screenwriter for Shore Leave?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Shore_Leave_(Star_Trek:_The_Original_Series)::0",
+      "top_score": 0.6967
+    },
+    {
+      "qid": "1705833",
+      "question": "Who is the father of Muiz ud din Qaiqabad?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Muiz_ud_din_Qaiqabad::0",
+      "top_score": 0.8061
+    },
+    {
+      "qid": "6374945",
+      "question": "What is Boulsa the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Boulsa::0",
+      "top_score": 0.8289
+    },
+    {
+      "qid": "2442515",
+      "question": "Who was the screenwriter for La rabbia?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "La_rabbia::0",
+      "top_score": 0.7381
+    },
+    {
+      "qid": "2102242",
+      "question": "Who was the composer of Messa?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Messa_(Puccini)::0",
+      "top_score": 0.72
+    },
+    {
+      "qid": "3463617",
+      "question": "Who was the screenwriter for Beautiful?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Beautiful_(2011_film)::0",
+      "top_score": 0.712
+    },
+    {
+      "qid": "1712488",
+      "question": "What is the capital of Romania?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Romania::0",
+      "top_score": 0.7726
+    },
+    {
+      "qid": "652177",
+      "question": "What is Michael Lynton's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Michael_Lynton::0",
+      "top_score": 0.7018
+    },
+    {
+      "qid": "6390346",
+      "question": "What is Fraga the capital of?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Fraga::0",
+      "top_score": 0.7654
+    },
+    {
+      "qid": "1480898",
+      "question": "Who was the composer of I Bet?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "I_Bet::0",
+      "top_score": 0.706
+    },
+    {
+      "qid": "5069327",
+      "question": "What is Flandreau the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Flandreau,_South_Dakota::0",
+      "top_score": 0.7319
+    },
+    {
+      "qid": "4976747",
+      "question": "What is the capital of Chad?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Chad::0",
+      "top_score": 0.7859
+    },
+    {
+      "qid": "5770964",
+      "question": "Who is the author of Sisters?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sisters_(Lynne_Cheney_novel)::0",
+      "top_score": 0.6955
+    },
+    {
+      "qid": "2122605",
+      "question": "Who was the director of The Rack?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Rack_(1956_film)::0",
+      "top_score": 0.6855
+    },
+    {
+      "qid": "5054498",
+      "question": "In what country is Magnolia Bible College?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Magnolia_Bible_College::1",
+      "top_score": 0.7639
+    },
+    {
+      "qid": "5422496",
+      "question": "In what country is Peru?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Peru,_West_Virginia::0",
+      "top_score": 0.6959
+    },
+    {
+      "qid": "3460355",
+      "question": "Who was the producer of My Way?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Teddy_Riley::0",
+      "top_score": 0.6644
+    },
+    {
+      "qid": "6405802",
+      "question": "Who was the producer of Stand Up?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Stand_Up_(Jethro_Tull_album)::0",
+      "top_score": 0.6908
+    },
+    {
+      "qid": "857875",
+      "question": "Who is the mother of Rama?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Rama::0",
+      "top_score": 0.7523
+    },
+    {
+      "qid": "2949085",
+      "question": "What genre is Either Way?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Either_Way_(film)::0",
+      "top_score": 0.7294
+    },
+    {
+      "qid": "552900",
+      "question": "Who was the producer of The Cheyenne Social Club?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Cheyenne_Social_Club::0",
+      "top_score": 0.772
+    },
+    {
+      "qid": "3548446",
+      "question": "Who was the screenwriter for Boring?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Boring_(The_Young_Ones)::0",
+      "top_score": 0.7015
+    },
+    {
+      "qid": "5126882",
+      "question": "What sport does Maxwell Griffin play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Maxwell_Griffin::0",
+      "top_score": 0.8368
+    },
+    {
+      "qid": "1895103",
+      "question": "In what country is Pal?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Pal,_Andorra::0",
+      "top_score": 0.8049
+    },
+    {
+      "qid": "2789480",
+      "question": "Who was the screenwriter for Eddie Presley?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Eddie_Presley::0",
+      "top_score": 0.7277
+    },
+    {
+      "qid": "5637648",
+      "question": "Who was the composer of The Cardinal?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Cardinal::0",
+      "top_score": 0.7
+    },
+    {
+      "qid": "5511807",
+      "question": "Who is the author of Quad?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Quad_(play)::0",
+      "top_score": 0.6609
+    },
+    {
+      "qid": "2750484",
+      "question": "In what country is Thabazimbi?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Thabazimbi::0",
+      "top_score": 0.6928
+    },
+    {
+      "qid": "2536013",
+      "question": "What is Lord George Hamilton's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Lord_George_Hamilton::0",
+      "top_score": 0.7996
+    },
+    {
+      "qid": "5938377",
+      "question": "Who was the director of The Little Ones?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Little_Ones::0",
+      "top_score": 0.7628
+    },
+    {
+      "qid": "3655692",
+      "question": "What is the capital of Faxe Municipality?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Faxe_Municipality::0",
+      "top_score": 0.7517
+    },
+    {
+      "qid": "1123364",
+      "question": "Who is the author of What Remains?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "What_Remains_(book)::0",
+      "top_score": 0.6648
+    },
+    {
+      "qid": "1604691",
+      "question": "In what country is Gawarzec Dolny?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Gawarzec_Dolny::0",
+      "top_score": 0.873
+    },
+    {
+      "qid": "867826",
+      "question": "Who was the composer of Aandan Adimai?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Aandan_Adimai::0",
+      "top_score": 0.7477
+    },
+    {
+      "qid": "428479",
+      "question": "What genre is Fahrenheit?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Frequency_(2000_film)::0",
+      "top_score": 0.5959
+    },
+    {
+      "qid": "564506",
+      "question": "In what city was Robert Crannell Minor born?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Robert_Crannell_Minor::0",
+      "top_score": 0.6309
+    },
+    {
+      "qid": "1927140",
+      "question": "What is the capital of Wales?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Wales::0",
+      "top_score": 0.7874
+    },
+    {
+      "qid": "1659405",
+      "question": "Who was the producer of Delivered?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Delivered::0",
+      "top_score": 0.7522
+    },
+    {
+      "qid": "66705",
+      "question": "Who was the composer of Liar?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Billy_(musical)::0",
+      "top_score": 0.6806
+    },
+    {
+      "qid": "6133467",
+      "question": "Who was the director of Wait and See?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Wait_and_See_(1928_film)::0",
+      "top_score": 0.7047
+    },
+    {
+      "qid": "6474547",
+      "question": "Who was the producer of The Law?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "The_Law_(1959_film)::0",
+      "top_score": 0.7276
+    },
+    {
+      "qid": "3904646",
+      "question": "Who was the director of Detective?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Detective_(2007_film)::0",
+      "top_score": 0.7262
+    },
+    {
+      "qid": "5707942",
+      "question": "What sport does Scott Muirhead play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Scott_Muirhead::0",
+      "top_score": 0.8334
+    },
+    {
+      "qid": "5113194",
+      "question": "Who was the producer of Master?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Master_(1997_film)::0",
+      "top_score": 0.6817
+    },
+    {
+      "qid": "3116122",
+      "question": "Who is the mother of Karl Mozart?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Karl_Thomas_Mozart::0",
+      "top_score": 0.8072
+    },
+    {
+      "qid": "44382",
+      "question": "What is the capital of Rwanda?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Rwanda::0",
+      "top_score": 0.7778
+    },
+    {
+      "qid": "580143",
+      "question": "What sport does Imbi Hoop play?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Jason_Kidd::0",
+      "top_score": 0.5537
+    },
+    {
+      "qid": "2649572",
+      "question": "What is Adam Darr's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Adam_Darr::0",
+      "top_score": 0.7603
+    },
+    {
+      "qid": "6147346",
+      "question": "Who was the producer of Ray?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Ray_(film)::0",
+      "top_score": 0.7416
+    },
+    {
+      "qid": "5183899",
+      "question": "What sport does Hans Pieren play?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Hans_Pieren::0",
+      "top_score": 0.7886
+    },
+    {
+      "qid": "2562740",
+      "question": "Who is the author of Cats?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Cats_(musical)::0",
+      "top_score": 0.6673
+    },
+    {
+      "qid": "3714873",
+      "question": "Who is the mother of Lucy DeVito?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Lucy_DeVito::0",
+      "top_score": 0.7317
+    },
+    {
+      "qid": "5359548",
+      "question": "Who was the composer of Our House?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Our_House_(Crosby,_Stills,_Nash_&_Young_song)::0",
+      "top_score": 0.7291
+    },
+    {
+      "qid": "6302289",
+      "question": "Who is the author of James Bond?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "James_Bond::0",
+      "top_score": 0.7573
+    },
+    {
+      "qid": "2858408",
+      "question": "Who was the producer of The Curse?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Curse_(1987_film)::0",
+      "top_score": 0.7358
+    },
+    {
+      "qid": "91028",
+      "question": "Who was the director of Break Up?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Break_Up_(1965_film)::0",
+      "top_score": 0.7586
+    },
+    {
+      "qid": "396571",
+      "question": "Who was the screenwriter for Enduring Love?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Enduring_Love_(film)::0",
+      "top_score": 0.7902
+    },
+    {
+      "qid": "1763729",
+      "question": "What is the capital of Azerbaijan?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Azerbaijan::0",
+      "top_score": 0.7749
+    },
+    {
+      "qid": "3131138",
+      "question": "In what country is Durrenentzen?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Durrenentzen::0",
+      "top_score": 0.8654
+    },
+    {
+      "qid": "3276962",
+      "question": "Who is the father of Alexander?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Alexander_(son_of_Perseus)::0",
+      "top_score": 0.8119
+    },
+    {
+      "qid": "3705644",
+      "question": "Who was the screenwriter for The Bridge?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "The_Tunnel_(1935_film)::0",
+      "top_score": 0.6393
+    },
+    {
+      "qid": "5958808",
+      "question": "Who was the director of The Take?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "The_Take_(2004_film)::0",
+      "top_score": 0.7681
+    },
+    {
+      "qid": "2935313",
+      "question": "Who was the screenwriter for The Trap?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Trap_(1922_film)::0",
+      "top_score": 0.6945
+    },
+    {
+      "qid": "2459192",
+      "question": "Who was the screenwriter for Encounter at Farpoint?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Encounter_at_Farpoint::0",
+      "top_score": 0.7056
+    },
+    {
+      "qid": "4507086",
+      "question": "What is the religion of Thomas Cooray?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Thomas_Cooray::0",
+      "top_score": 0.7676
+    },
+    {
+      "qid": "4498632",
+      "question": "Who was the producer of Hospital Music?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Hospital_Music::0",
+      "top_score": 0.7008
+    },
+    {
+      "qid": "5304362",
+      "question": "What is Norman Crowther Hunt, Baron Crowther-Hunt's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Norman_Crowther_Hunt,_Baron_Crowther-Hunt::0",
+      "top_score": 0.7872
+    },
+    {
+      "qid": "1878539",
+      "question": "In what country is Égligny?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Égligny::0",
+      "top_score": 0.8348
+    },
+    {
+      "qid": "2987359",
+      "question": "Who was the director of Balance?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Balance_(1983_film)::0",
+      "top_score": 0.722
+    },
+    {
+      "qid": "2064896",
+      "question": "Who was the producer of Precious?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Precious_(film)::0",
+      "top_score": 0.698
+    },
+    {
+      "qid": "3941941",
+      "question": "Who was the screenwriter for Doore Doore Oru Koodu Koottam?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Doore_Doore_Oru_Koodu_Koottam::0",
+      "top_score": 0.7837
+    },
+    {
+      "qid": "37343",
+      "question": "Who was the screenwriter for Live Show?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Live_Show::0",
+      "top_score": 0.691
+    },
+    {
+      "qid": "2216758",
+      "question": "Who was the director of On My Way?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "On_My_Way_(film)::0",
+      "top_score": 0.8093
+    },
+    {
+      "qid": "5331042",
+      "question": "In what city was Olatubosun Oladapo born?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Olatubosun_Oladapo::0",
+      "top_score": 0.7669
+    },
+    {
+      "qid": "285835",
+      "question": "Who was the director of The Navigator?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Navigator_(1924_film)::0",
+      "top_score": 0.7163
+    },
+    {
+      "qid": "4903153",
+      "question": "Who was the screenwriter for Kids?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Kids_(film)::0",
+      "top_score": 0.7135
+    },
+    {
+      "qid": "1824126",
+      "question": "Who was the composer of Lost?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Spiel_(Stockhausen)::0",
+      "top_score": 0.64
+    },
+    {
+      "qid": "4520346",
+      "question": "What sport does Hwang Byung-ju play?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Yoo_Yong-sung::0",
+      "top_score": 0.5827
+    },
+    {
+      "qid": "3485927",
+      "question": "In what city was Bert Myers born?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Bert_Myers::0",
+      "top_score": 0.653
+    },
+    {
+      "qid": "2188806",
+      "question": "Who was the composer of Nun komm, der Heiden Heiland, BWV 62?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Nun_komm,_der_Heiden_Heiland,_BWV_62::0",
+      "top_score": 0.7206
+    },
+    {
+      "qid": "5057609",
+      "question": "Who was the director of The International?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_International_(2009_film)::0",
+      "top_score": 0.755
+    },
+    {
+      "qid": "2104045",
+      "question": "Who was the screenwriter for The Descendants?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Descendants::0",
+      "top_score": 0.7926
+    },
+    {
+      "qid": "1081675",
+      "question": "In what country is Chalhuacocha?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Chalhuacocha_(Junín)::0",
+      "top_score": 0.8132
+    },
+    {
+      "qid": "3753788",
+      "question": "What is Cleveland the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Cleveland,_Queensland::0",
+      "top_score": 0.6817
+    },
+    {
+      "qid": "5507893",
+      "question": "In what country is Pârâul Bogat?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sudan::0",
+      "top_score": 0.5912
+    },
+    {
+      "qid": "1251079",
+      "question": "What sport does 1952 NFL season play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "1952_NFL_season::0",
+      "top_score": 0.7545
+    },
+    {
+      "qid": "997059",
+      "question": "Who was the screenwriter for Black Book?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Black_Book_(film)::1",
+      "top_score": 0.6601
+    },
+    {
+      "qid": "1000828",
+      "question": "Who is the author of It!?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "The_It_Girl_(novel_series)::0",
+      "top_score": 0.723
+    },
+    {
+      "qid": "3476414",
+      "question": "Who was the producer of Benjamin Franklin, Jr.?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Benjamin_Franklin,_Jr.::0",
+      "top_score": 0.7684
+    },
+    {
+      "qid": "2090982",
+      "question": "Who was the producer of New York?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "On_the_Town_(film)::1",
+      "top_score": 0.6439
+    },
+    {
+      "qid": "76438",
+      "question": "What genre is In Their Skin?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "In_Their_Skin::0",
+      "top_score": 0.6493
+    },
+    {
+      "qid": "992567",
+      "question": "Who was the screenwriter for The Search?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Search_(2014_film)::0",
+      "top_score": 0.7319
+    },
+    {
+      "qid": "178789",
+      "question": "In what city was György Kárpáti born?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "György_Kárpáti_(film_director)::0",
+      "top_score": 0.7913
+    },
+    {
+      "qid": "5883008",
+      "question": "Who is the father of Tanya?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Tanya_(horse)::0",
+      "top_score": 0.6593
+    },
+    {
+      "qid": "293476",
+      "question": "In what city was Derek Lamb born?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Derek_Lamb::2",
+      "top_score": 0.6315
+    },
+    {
+      "qid": "2966183",
+      "question": "What is Pierre the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Pierre,_South_Dakota::0",
+      "top_score": 0.7893
+    },
+    {
+      "qid": "5727010",
+      "question": "Who is the author of Shadow?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Shade_(video_game)::0",
+      "top_score": 0.6589
+    },
+    {
+      "qid": "205245",
+      "question": "What is Naka-ku the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Naka-ku,_Yokohama::0",
+      "top_score": 0.7391
+    },
+    {
+      "qid": "800535",
+      "question": "In what country is Sinaloa Cartel?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sinaloa_Cartel::0",
+      "top_score": 0.736
+    },
+    {
+      "qid": "2016599",
+      "question": "What sport does Katie Taylor play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Katie_Taylor::0",
+      "top_score": 0.6877
+    },
+    {
+      "qid": "1177081",
+      "question": "What is the religion of José Palmeira Lessa?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "José_Palmeira_Lessa::0",
+      "top_score": 0.8395
+    },
+    {
+      "qid": "6469625",
+      "question": "What genre is Being There?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Toronto::4",
+      "top_score": 0.5974
+    },
+    {
+      "qid": "776897",
+      "question": "Who was the screenwriter for Please Give?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Please_Give::0",
+      "top_score": 0.7538
+    },
+    {
+      "qid": "177542",
+      "question": "What is Claire Berlinski's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Claire_Berlinski::0",
+      "top_score": 0.8775
+    },
+    {
+      "qid": "977871",
+      "question": "Who was the screenwriter for Lava Kusha?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Lava_Kusha_(2007_film)::0",
+      "top_score": 0.8277
+    },
+    {
+      "qid": "6439663",
+      "question": "What sport does 1895 Home Nations Championship play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "1895_Home_Nations_Championship::0",
+      "top_score": 0.8781
+    },
+    {
+      "qid": "66107",
+      "question": "What is the capital of Sudan?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sudan::0",
+      "top_score": 0.7873
+    },
+    {
+      "qid": "1665931",
+      "question": "What is the capital of Latvia?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Riga::0",
+      "top_score": 0.7804
+    },
+    {
+      "qid": "4219992",
+      "question": "What is George Minor's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "George_Minor::0",
+      "top_score": 0.7388
+    },
+    {
+      "qid": "5961751",
+      "question": "Who is the author of The Universe Around Us?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Universe_Around_Us::0",
+      "top_score": 0.8327
+    },
+    {
+      "qid": "246203",
+      "question": "Who was the screenwriter for The Secret?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Secret_(1974_film)::0",
+      "top_score": 0.7141
+    },
+    {
+      "qid": "3713393",
+      "question": "What is the capital of Chittenden County?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Chittenden_County,_Vermont::0",
+      "top_score": 0.6879
+    },
+    {
+      "qid": "2941210",
+      "question": "Who was the director of One of Those?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "One_of_Those::0",
+      "top_score": 0.7215
+    },
+    {
+      "qid": "2941094",
+      "question": "Who is the author of Before Midnight?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Before_Midnight_(novel)::0",
+      "top_score": 0.6669
+    },
+    {
+      "qid": "5797561",
+      "question": "Who is the author of Spar?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Spar_(short_story)::0",
+      "top_score": 0.7224
+    },
+    {
+      "qid": "706978",
+      "question": "Who is the father of Djer?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Djer::0",
+      "top_score": 0.7692
+    },
+    {
+      "qid": "2187694",
+      "question": "What is Tours the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Tours::0",
+      "top_score": 0.7518
+    },
+    {
+      "qid": "1809418",
+      "question": "What sport does Olympique Lillois play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Olympique_Lillois::0",
+      "top_score": 0.7963
+    },
+    {
+      "qid": "6039115",
+      "question": "Who was the director of Trust?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Trust_(Revenge)::0",
+      "top_score": 0.6985
+    },
+    {
+      "qid": "1735597",
+      "question": "Who is the mother of Princess Florestine, Duchess of Urach?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Princess_Florestine_of_Monaco::0",
+      "top_score": 0.7818
+    },
+    {
+      "qid": "5704302",
+      "question": "What genre is The Aleph?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "The_Aleph_and_Other_Stories::0",
+      "top_score": 0.6326
+    },
+    {
+      "qid": "5702088",
+      "question": "What is the capital of canton of Gordes?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Canton_of_Gordes::0",
+      "top_score": 0.7918
+    },
+    {
+      "qid": "6273322",
+      "question": "What is Ronneby the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Ronneby::0",
+      "top_score": 0.7403
+    },
+    {
+      "qid": "4948723",
+      "question": "What genre is The Invasion?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Invasion_(film)::0",
+      "top_score": 0.6403
+    },
+    {
+      "qid": "2217230",
+      "question": "Who was the composer of The Seasons?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Seasons_(Tchaikovsky)::0",
+      "top_score": 0.7992
+    },
+    {
+      "qid": "6491072",
+      "question": "What is Beijing the capital of?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Beijing::0",
+      "top_score": 0.8064
+    },
+    {
+      "qid": "5166295",
+      "question": "Who is the author of Midnight Tides?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Midnight_Tides::0",
+      "top_score": 0.7737
+    },
+    {
+      "qid": "4236950",
+      "question": "Who is the author of Getting Married?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Getting_Married::0",
+      "top_score": 0.6878
+    },
+    {
+      "qid": "5473227",
+      "question": "Who is the father of Joan of Arc?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Joan_of_Arc::0",
+      "top_score": 0.7835
+    },
+    {
+      "qid": "3708093",
+      "question": "What sport does Chertsey Town F.C. play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Chertsey_Town_F.C.::0",
+      "top_score": 0.6982
+    },
+    {
+      "qid": "4208555",
+      "question": "What is George Birnie Esslemont's occupation?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "George_Esslemont::0",
+      "top_score": 0.7777
+    },
+    {
+      "qid": "1641120",
+      "question": "Who was the composer of Messiah?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Messiah_(Handel)::0",
+      "top_score": 0.6812
+    },
+    {
+      "qid": "773633",
+      "question": "Who was the producer of Happy Christmas?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Happy_Christmas_(film)::0",
+      "top_score": 0.7241
+    },
+    {
+      "qid": "2381178",
+      "question": "Who was the screenwriter for Out of Life?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Out_of_Life::0",
+      "top_score": 0.7659
+    },
+    {
+      "qid": "1728110",
+      "question": "Who was the screenwriter for The Entity?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "The_Entity::0",
+      "top_score": 0.7566
+    },
+    {
+      "qid": "2313722",
+      "question": "Who was the screenwriter for The Experience?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Experience_(film)::0",
+      "top_score": 0.7756
+    },
+    {
+      "qid": "1726045",
+      "question": "In what country is Sugar Loaf Mountain?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sugarloaf_Mountain_(Maryland)::0",
+      "top_score": 0.6603
+    },
+    {
+      "qid": "5516019",
+      "question": "What genre is Regeneration?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Regeneration_(1915_film)::0",
+      "top_score": 0.7429
+    },
+    {
+      "qid": "221318",
+      "question": "Who was the composer of Smile?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Smile_(Charlie_Chaplin_song)::0",
+      "top_score": 0.7375
+    },
+    {
+      "qid": "5407037",
+      "question": "What sport does Paulo Grilo play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Paulo_Grilo::0",
+      "top_score": 0.7731
+    },
+    {
+      "qid": "535313",
+      "question": "Who was the director of The Signal?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Signal::0",
+      "top_score": 0.704
+    },
+    {
+      "qid": "2081420",
+      "question": "In what country is Hudson?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Hudson,_Indiana::0",
+      "top_score": 0.7832
+    },
+    {
+      "qid": "5753186",
+      "question": "Who was the screenwriter for Sick?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Sick_(The_Young_Ones)::0",
+      "top_score": 0.6732
+    },
+    {
+      "qid": "2715838",
+      "question": "Who was the director of Haunted?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Haunted_(1995_film)::0",
+      "top_score": 0.8138
+    },
+    {
+      "qid": "466871",
+      "question": "What sport does Nicolaas Cortlever play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Nicolaas_Cortlever::0",
+      "top_score": 0.7984
+    },
+    {
+      "qid": "3524795",
+      "question": "Who was the screenwriter for Bleak House?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Bleak_House_(1920_film)::0",
+      "top_score": 0.6888
+    },
+    {
+      "qid": "2461657",
+      "question": "Who was the director of Lincoln?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Lincoln_(film)::0",
+      "top_score": 0.7608
+    },
+    {
+      "qid": "2594713",
+      "question": "Who was the composer of Chandi Sona?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Chandi_Sona::0",
+      "top_score": 0.7756
+    },
+    {
+      "qid": "2742951",
+      "question": "In what country is Mangalore University?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Mangalore_University::0",
+      "top_score": 0.8193
+    },
+    {
+      "qid": "4712637",
+      "question": "Who is the author of King James Version?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "King_James_Version::0",
+      "top_score": 0.8219
+    },
+    {
+      "qid": "554498",
+      "question": "Who was the screenwriter for Come Play with Me?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Come_Play_with_Me_(1968_film)::0",
+      "top_score": 0.7043
+    },
+    {
+      "qid": "990579",
+      "question": "Who was the director of The Take?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Take_(2004_film)::0",
+      "top_score": 0.7681
+    },
+    {
+      "qid": "2708650",
+      "question": "What genre is What About Me?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "What_About_Me_(Quicksilver_Messenger_Service_album)::0",
+      "top_score": 0.6562
+    },
+    {
+      "qid": "785341",
+      "question": "Who was the screenwriter for Head?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Head_(American_Horror_Story)::0",
+      "top_score": 0.6732
+    },
+    {
+      "qid": "4270722",
+      "question": "Who is the author of Gowie Corby Plays Chicken?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Gowie_Corby_Plays_Chicken::0",
+      "top_score": 0.8473
+    },
+    {
+      "qid": "3446186",
+      "question": "What is the capital of Covington County?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Covington_County,_Mississippi::0",
+      "top_score": 0.7501
+    },
+    {
+      "qid": "6453829",
+      "question": "What is the capital of Hato Mayor Province?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Hato_Mayor_Province::0",
+      "top_score": 0.8136
+    },
+    {
+      "qid": "1058324",
+      "question": "What is the capital of Zavkhan Province?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Zavkhan_Province::0",
+      "top_score": 0.8066
+    },
+    {
+      "qid": "1706966",
+      "question": "Who was the screenwriter for Thor?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Thor_(film)::0",
+      "top_score": 0.78
+    },
+    {
+      "qid": "4095161",
+      "question": "Who was the screenwriter for Fate?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Fate_(2001_film)::0",
+      "top_score": 0.7589
+    },
+    {
+      "qid": "2460962",
+      "question": "Who is the author of Reading Capital (work level)?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Reading_Capital::0",
+      "top_score": 0.7312
+    },
+    {
+      "qid": "6036433",
+      "question": "What is the religion of Trocaire College?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Trocaire_College::0",
+      "top_score": 0.7933
+    },
+    {
+      "qid": "1345361",
+      "question": "Who was the producer of Temper?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Temper_(film)::0",
+      "top_score": 0.7226
+    },
+    {
+      "qid": "5187400",
+      "question": "Who is the author of Miracle?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "King_James_Version::0",
+      "top_score": 0.5962
+    },
+    {
+      "qid": "6316745",
+      "question": "Who was the producer of If Only?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "If_Only::0",
+      "top_score": 0.6271
+    },
+    {
+      "qid": "312835",
+      "question": "Who was the director of Mother?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Mother_(1926_film)::0",
+      "top_score": 0.7047
+    },
+    {
+      "qid": "345054",
+      "question": "Who is the author of Helen?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Helen_(play)::0",
+      "top_score": 0.6977
+    },
+    {
+      "qid": "1462306",
+      "question": "Who was the producer of Some Like It Hot?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Some_Like_It_Hot::0",
+      "top_score": 0.7164
+    },
+    {
+      "qid": "6036329",
+      "question": "Who was the screenwriter for Trivandrum Lodge?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Trivandrum_Lodge::0",
+      "top_score": 0.7965
+    },
+    {
+      "qid": "1471819",
+      "question": "What is the religion of Maximilian Kaller?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Maximilian_Kaller::0",
+      "top_score": 0.7957
+    },
+    {
+      "qid": "4906189",
+      "question": "What sport does Ladislav Žák play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Muhamed_Konjić::0",
+      "top_score": 0.5957
+    },
+    {
+      "qid": "731259",
+      "question": "Who was the producer of The Lives of Others?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Lives_of_Others::0",
+      "top_score": 0.766
+    },
+    {
+      "qid": "3370309",
+      "question": "Who was the producer of The Holiday?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Holiday::0",
+      "top_score": 0.7662
+    },
+    {
+      "qid": "3748749",
+      "question": "Who is the author of Classic?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Bede::0",
+      "top_score": 0.6385
+    },
+    {
+      "qid": "4632",
+      "question": "Who was the producer of Frequency?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Frequency_(2000_film)::0",
+      "top_score": 0.7332
+    },
+    {
+      "qid": "4391507",
+      "question": "Who is the father of Princess Senate Seeiso?",
+      "hit": true,
+      "top1_hit": false,
+      "top_chunk": "Princess_Senate_Seeiso::1",
+      "top_score": 0.702
+    },
+    {
+      "qid": "5269196",
+      "question": "In what city was Nelson Faria born?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Nelson_Faria::0",
+      "top_score": 0.7892
+    },
+    {
+      "qid": "3164979",
+      "question": "What sport does Amdy Faye play?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Amdy_Faye::0",
+      "top_score": 0.7913
+    },
+    {
+      "qid": "3285260",
+      "question": "In what city was Alfred Frank Hardiman born?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Alfred_Frank_Hardiman::0",
+      "top_score": 0.8156
+    },
+    {
+      "qid": "3414338",
+      "question": "In what country is Avery?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Avery,_Oklahoma::0",
+      "top_score": 0.7126
+    },
+    {
+      "qid": "2533507",
+      "question": "Who was the producer of Imagine?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Imagine_(John_Lennon_album)::0",
+      "top_score": 0.745
+    },
+    {
+      "qid": "2493411",
+      "question": "Who was the director of The Capture?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Capture_(film)::0",
+      "top_score": 0.768
+    },
+    {
+      "qid": "1646788",
+      "question": "Who was the composer of Crazy?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Crazy_(Gnarls_Barkley_song)::0",
+      "top_score": 0.5958
+    },
+    {
+      "qid": "4581447",
+      "question": "Who is the author of Thinking of You?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Thinking_of_You_(Katy_Perry_song)::0",
+      "top_score": 0.7475
+    },
+    {
+      "qid": "1169772",
+      "question": "Who was the producer of Power?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Power_(2014_Telugu_film)::0",
+      "top_score": 0.6535
+    },
+    {
+      "qid": "29729",
+      "question": "Who was the screenwriter for Fighting?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Fighting_(2009_film)::0",
+      "top_score": 0.769
+    },
+    {
+      "qid": "2607576",
+      "question": "What genre is Risen?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Risen_(series)::0",
+      "top_score": 0.7383
+    },
+    {
+      "qid": "1907497",
+      "question": "What genre is The Battle?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Battle_(Allen-Lande_album)::0",
+      "top_score": 0.6843
+    },
+    {
+      "qid": "792739",
+      "question": "Who was the screenwriter for Holiday?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Holiday_(1930_film)::0",
+      "top_score": 0.7167
+    },
+    {
+      "qid": "3237496",
+      "question": "Who is the author of Afternoon?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Afternoon_(play)::0",
+      "top_score": 0.6784
+    },
+    {
+      "qid": "1072943",
+      "question": "What is the religion of Hebrew Theological College?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Hebrew_Theological_College::0",
+      "top_score": 0.7591
+    },
+    {
+      "qid": "3554926",
+      "question": "Who was the producer of Boy Meets Dog?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Boy_Meets_Dog!::0",
+      "top_score": 0.7742
+    },
+    {
+      "qid": "2933598",
+      "question": "Who is the author of The Ghost Road?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "The_Ghost_Road::0",
+      "top_score": 0.7612
+    },
+    {
+      "qid": "2195948",
+      "question": "Who was the director of Beating Heart?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Beating_Heart_(film)::0",
+      "top_score": 0.7749
+    },
+    {
+      "qid": "5906805",
+      "question": "Who was the composer of The East?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "Paul_Hindemith::0",
+      "top_score": 0.6296
+    },
+    {
+      "qid": "1991813",
+      "question": "Who was the director of Lady Bouvier's Lover?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Lady_Bouvier's_Lover::0",
+      "top_score": 0.6317
+    },
+    {
+      "qid": "2811019",
+      "question": "Who was the director of Out of the Blue?",
+      "hit": true,
+      "top1_hit": true,
+      "top_chunk": "Out_of_the_Blue_(1947_film)::0",
+      "top_score": 0.7694
+    },
+    {
+      "qid": "817986",
+      "question": "Who is the father of John Sigismund, Crown Prince of Poland?",
+      "hit": false,
+      "top1_hit": false,
+      "top_chunk": "John_Sigismund_Vasa::0",
+      "top_score": 0.7734
+    }
+  ]
+}
