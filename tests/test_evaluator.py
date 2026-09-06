@@ -139,9 +139,16 @@ def test_low_correct_probability_falls_to_ambiguous_when_ambiguous_dominates():
 
 
 def test_the_middle_band_is_ambiguous():
-    """Between the thresholds the model is not confident enough to commit."""
-    evaluator = RetrievalEvaluator()
-    label, _ = evaluator.label_from_probs({"correct": 0.50, "ambiguous": 0.25, "wrong": 0.25})
+    """Between the thresholds the model is not confident enough to commit.
+
+    Pinned to explicit thresholds rather than the tuned config values, so
+    retuning Module B changes the measured numbers without breaking the test
+    that guards the decision logic.
+    """
+    cfg = replace(config.EVALUATOR, correct_threshold=0.70, wrong_threshold=0.30)
+    label, _ = RetrievalEvaluator(cfg).label_from_probs(
+        {"correct": 0.50, "ambiguous": 0.25, "wrong": 0.25}
+    )
     assert label is ChunkLabel.AMBIGUOUS
 
 

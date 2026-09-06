@@ -1,0 +1,87 @@
+{
+  "phase": 2,
+  "module": "B - retrieval evaluator (the contribution)",
+  "status": "built and measured; does NOT clear its gate",
+  "model": {
+    "base": "microsoft/deberta-v3-small",
+    "architecture": "cross-encoder, 3-class (correct/ambiguous/wrong)",
+    "trained_on": "cpu",
+    "train_minutes": 85.87,
+    "epochs_run": 3,
+    "checkpoint_selected": "epoch 2 (best val macro-F1)",
+    "selection_metric": "val macro-F1, not accuracy",
+    "note": "epoch 3 overfit the ambiguous class (val F1 0.704 -> 0.609); macro-F1 selection kept epoch 2."
+  },
+  "data": {
+    "pairs": 3770,
+    "questions": 754,
+    "train": 2635,
+    "val": 375,
+    "test": 760,
+    "labels": "WEAK (rule-derived, train/weak_labels.py). NOT hand-labeled.",
+    "split_by": "question id, so no question straddles splits",
+    "leakage_guard": "trained on PopQA test-split questions; the dev split used by the Phase 6 ablation is untouched",
+    "class_distribution": {
+      "correct": 727,
+      "ambiguous": 258,
+      "wrong": 2785
+    }
+  },
+  "threshold_protocol": {
+    "swept_on": "val only (eval/tune_thresholds.py)",
+    "selected": {
+      "correct_threshold": 0.5,
+      "wrong_threshold": 0.05
+    },
+    "selected_by": "per-chunk macro-F1 on val (0.8591)",
+    "why_not_action_accuracy": "val action distribution is 89.3% Correct; maximising action accuracy drifts toward a trivial always-Correct predictor",
+    "val_finding": "NO threshold setting beat the val majority baseline (best 0.8667 vs 0.8933)"
+  },
+  "test_runs": {
+    "reported": {
+      "config": "correct>=0.50 wrong<=0.05 (val-selected)",
+      "per_chunk_accuracy": 0.9197,
+      "per_chunk_macro_f1": 0.801,
+      "per_class_f1": {
+        "correct": 0.83,
+        "ambiguous": 0.588,
+        "wrong": 0.985
+      },
+      "action_accuracy": 0.8158,
+      "corrective_trigger_rate": 0.1118
+    },
+    "prior_placeholder_run_disclosed": {
+      "config": "correct>=0.70 wrong<=0.30 (untuned Phase-0 placeholder)",
+      "per_chunk_accuracy": 0.9289,
+      "per_chunk_macro_f1": 0.8345,
+      "per_class_f1": {
+        "correct": 0.828,
+        "ambiguous": 0.689,
+        "wrong": 0.986
+      },
+      "action_accuracy": 0.8224,
+      "corrective_trigger_rate": 0.2105,
+      "note": "Scored BETTER on test than the val-selected config. Disclosed, not claimed: selecting it would be tuning on test. The val sweep did not transfer - val is only 75 questions."
+    }
+  },
+  "crag_comparison": {
+    "crag_reported": 0.843,
+    "source": "Yan et al. 2024, Corrective Retrieval Augmented Generation, arXiv:2401.15884v3, Table 4, section 5.5",
+    "crag_setup": "T5-large (0.77B) fine-tuned; PopQA; 1399-question test split from Self-RAG; Contriever retrieval, ~10 docs/question",
+    "crag_metric": "accuracy of the retrieval ACTION chosen for a retrieved set, not per-chunk grading",
+    "also_in_that_table": {
+      "ChatGPT": 0.58,
+      "ChatGPT-CoT": 0.624,
+      "ChatGPT-few-shot": 0.647
+    },
+    "our_action_accuracy": 0.8158,
+    "our_majority_baseline": 0.875,
+    "verdict": "GATE NOT MET. Our action accuracy (0.8158) is below both CRAG's 0.843 and our own majority-class baseline (0.8750). Because a trivial always-Correct predictor scores 0.875 on this split, beating 0.843 here would not have been a real claim either."
+  },
+  "gate": {
+    "required": "beats CRAG-reported grading accuracy; corrective loop fires",
+    "corrective_loop_fires": true,
+    "beats_crag": false,
+    "beats_majority_baseline": false
+  }
+}

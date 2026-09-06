@@ -22,7 +22,7 @@ evaluator. Everything else reproduces published work.
 | Module | File | Responsibility | Status |
 |---|---|---|---|
 | A | `core/retriever.py` | Chunk, embed, store in FAISS | **built** (Phase 1) |
-| B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | stub (Phase 2) |
+| B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | **built** (Phase 2) |
 | C | `core/generator.py` | Generate answer, one citation per sentence | plain generator built; citations Phase 3 |
 | D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | stub (Phase 4) |
 | E | `core/repair.py` | Regenerate, drop, or abstain | stub (Phase 5) |
@@ -103,6 +103,33 @@ Faithfulness uses the **RAGAS definition** (claims entailed by context / total c
 own implementation calling Claude directly. RAGAS the library hard-requires `openai`, `langchain`
 and `langchain_openai`, which this project does not take on. Report it as
 "RAGAS-definition faithfulness, own implementation" — it is not a RAGAS number.
+
+## Module B — the contribution
+
+Module B replaces CRAG's T5-large retrieval evaluator with a fine-tuned DeBERTa-v3-small
+cross-encoder. It runs locally on CPU, so grading is free however many chunks are graded.
+
+```bash
+python -m train.build_dataset --out data/eval_labels   # free: weak labels from the index
+python -m train.finetune_evaluator --epochs 3          # CPU ~90 min, free T4 ~3 min
+python -m eval.run_evaluator_bench --split test        # free: the benchmark
+```
+
+**The rubric is frozen.** `train/LABELING.md` defines correct / ambiguous / wrong and was written
+before any labeling. Revising it after seeing results would make the headline number
+unfalsifiable; the fix for a genuine defect is a new dated version plus a full relabel.
+
+**On the CRAG comparison.** CRAG reports **84.3%** (Yan et al. 2024, arXiv:2401.15884v3, Table 4,
+PopQA, T5-large, 1,399-question test split). That figure is the accuracy of the *action* chosen for
+a whole retrieved set (§5.5), **not** per-chunk grading accuracy. So the benchmark reports the two
+separately, prints the majority-class baseline next to both, and lists every reason the comparison
+is not like-for-like. Our action distribution is far more skewed than CRAG's, so beating 84.3 on
+this split is not by itself a real claim.
+
+**Labels are weak, not hand-labeled.** `train/weak_labels.py` derives them by rule, the same
+approach CRAG used (PopQA's gold subject wiki title as the relevance signal). `train/label.py` and
+`train/agreement.py` exist to measure how far that rule diverges from the rubric, via a
+double-labeled human slice.
 
 ## Build status
 

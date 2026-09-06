@@ -1,0 +1,103 @@
+{
+  "split": "test",
+  "questions": 152,
+  "pairs": 760,
+  "elapsed_s": 63.1,
+  "per_chunk": {
+    "grading_accuracy": 0.9197,
+    "macro_f1": 0.801,
+    "per_class": {
+      "correct": {
+        "precision": 0.8392,
+        "recall": 0.8219,
+        "f1": 0.8304,
+        "support": 146
+      },
+      "ambiguous": {
+        "precision": 0.5333,
+        "recall": 0.6557,
+        "f1": 0.5882,
+        "support": 61
+      },
+      "wrong": {
+        "precision": 0.9945,
+        "recall": 0.9747,
+        "f1": 0.9845,
+        "support": 553
+      }
+    },
+    "confusion": {
+      "correct": {
+        "correct": 120,
+        "ambiguous": 25,
+        "wrong": 1
+      },
+      "ambiguous": {
+        "correct": 19,
+        "ambiguous": 40,
+        "wrong": 2
+      },
+      "wrong": {
+        "correct": 4,
+        "ambiguous": 10,
+        "wrong": 539
+      }
+    }
+  },
+  "query_level_action": {
+    "accuracy": 0.8158,
+    "majority_class_baseline": 0.875,
+    "majority_class": "Correct",
+    "beats_majority_baseline": false,
+    "corrective_trigger_rate": 0.1118,
+    "confusion": {
+      "Correct": {
+        "Correct": 118,
+        "Ambiguous": 14,
+        "Incorrect": 1
+      },
+      "Ambiguous": {
+        "Correct": 13,
+        "Ambiguous": 3,
+        "Incorrect": 0
+      },
+      "Incorrect": {
+        "Correct": 0,
+        "Ambiguous": 0,
+        "Incorrect": 3
+      }
+    }
+  },
+  "crag_baseline": {
+    "value": 84.3,
+    "metric": "accuracy of the retrieval action chosen for a retrieved set",
+    "paper": "Yan et al. 2024, Corrective Retrieval Augmented Generation",
+    "arxiv": "2401.15884v3",
+    "table": "Table 4",
+    "section": "5.5",
+    "dataset": "PopQA",
+    "model": "T5-large (0.77B), fine-tuned",
+    "test_size": 1399,
+    "retriever": "Contriever, ~10 documents per question (Self-RAG's retrieval results)",
+    "also_in_table": {
+      "ChatGPT": 58.0,
+      "ChatGPT-CoT": 62.4,
+      "ChatGPT-few-shot": 64.7
+    }
+  },
+  "not_like_for_like": [
+    "Different corpus. CRAG retrieves over full Wikipedia via Contriever with ~10 documents per question; SCRAG retrieves over a 990-document corpus of Wikipedia lead sections with top-5. A smaller corpus makes grading easier.",
+    "Different test set. CRAG uses Self-RAG's 1,399-question PopQA test split; SCRAG uses its own seeded split (seed 42) and only questions whose subject page is in the corpus.",
+    "Different ground truth. CRAG never published a per-chunk labeling rubric; our labels come from train/LABELING.md, approximated by the weak rule in train/weak_labels.py. Both sides are 'accuracy against our own labels'.",
+    "Weak supervision. Test labels here are rule-derived, not hand-labeled. The human-labeled slice (train/agreement.py) is what bounds how much that costs."
+  ],
+  "config": {
+    "checkpoint": "C:\\Users\\hilar_qhjylyo\\Desktop\\major project\\data\\models\\evaluator",
+    "base_model": "microsoft/deberta-v3-small",
+    "correct_threshold": 0.5,
+    "wrong_threshold": 0.05,
+    "max_length": 320,
+    "seed": 42
+  },
+  "labels_are": "weak (rule-derived), not hand-labeled"
+}

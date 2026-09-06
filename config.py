@@ -62,9 +62,12 @@ class EvaluatorConfig:
     # tokens), so 320 fits both with headroom. Train and inference must use the
     # same value or the checkpoint sees different truncation than it trained on.
     max_length: int = 320
-    # PLACEHOLDER thresholds — Phase 2 replaces these with measured values.
-    correct_threshold: float = 0.70
-    wrong_threshold: float = 0.30
+    # Tuned on the VALIDATION split by eval/tune_thresholds.py, never on test.
+    # Selected by per-chunk macro-F1 (0.8591 on val), not by action accuracy:
+    # the action distribution on this split is ~89% Correct, so maximising
+    # action accuracy drifts toward a trivial always-Correct predictor.
+    correct_threshold: float = 0.50
+    wrong_threshold: float = 0.05
     # Corrective retrieval fires when the top chunk grades below this.
     corrective_trigger_threshold: float = 0.50
     # Bounded, per the phase design note: an unbounded re-query loop burns time
