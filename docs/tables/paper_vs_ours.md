@@ -1,0 +1,13 @@
+# Paper reported X vs we achieved Y
+
+Every baseline figure carries the paper **and** the table it came from. Where a figure is not recorded in this project, the cell is empty and the verdict says so - a plausible number would be worse than a gap.
+
+| Concern | Paper | Paper Reported | Source | We Achieved | Verdict |
+|---|---|---|---|---|---|
+| Evaluator action accuracy | CRAG (Yan et al. 2024) | 0.8430 | Table 4, arXiv:2401.15884v3, section 5.5 | 0.8158 | BELOW - and below our own 0.8750 majority baseline, so the comparison is not a real claim on this split |
+| Evaluator vs ChatGPT (same table) | CRAG (Yan et al. 2024) | 0.5800 / 0.6240 / 0.6470 | Table 4 - ChatGPT, CoT, few-shot | 0.8158 | ABOVE all three, but so is the trivial majority predictor |
+| Citation precision | ALCE (Gao et al. 2023) |  | NOT RECORDED in this project | 0.7409 | reported unqualified - no baseline to hand, and a different entailment model than ALCE's TRUE/T5-XXL |
+| Citation recall | ALCE (Gao et al. 2023) |  | NOT RECORDED in this project | 0.8388 | reported unqualified - same reason |
+| Faithfulness | n/a |  | no published baseline |  | NOT MEASURED - the Phase 1 baseline never ran |
+
+Empty cells are deliberate: the measurement does not exist. They are never rendered as zero.

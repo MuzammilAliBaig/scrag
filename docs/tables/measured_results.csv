@@ -1,0 +1,32 @@
+module,metric,value,source,note
+A - Retrieval,retrieval hit rate @ k=5,0.8700,retrieval_check.json,gold answer present in top-5; ceiling on answerable accuracy
+A - Retrieval,top-1 hit rate,0.8000,retrieval_check.json,
+A - Retrieval,corpus chunks,1612,retrieval_check.json,990 Wikipedia lead sections incl. 800 distractor entities
+B - Evaluator,per-chunk grading accuracy,0.9197,evaluator_bench.json,no published counterpart; CRAG never released a per-chunk rubric
+B - Evaluator,per-chunk macro F1,0.8010,evaluator_bench.json,
+B - Evaluator,F1 (ambiguous class),0.5882,evaluator_bench.json,"the hard class, as the rubric predicted"
+B - Evaluator,query-level action accuracy,0.8158,evaluator_bench.json,the only CRAG-comparable number
+B - Evaluator,majority-class baseline,0.8750,evaluator_bench.json,a trivial always-Correct predictor; our number is BELOW it
+B - Evaluator,corrective-loop trigger rate,0.1118,evaluator_bench.json,
+C - Citation,parseable-citation rate,1.0000,citation_bench.json,Phase 3 gate; abstentions excluded (0.9498 including them)
+C - Citation,invalid-id rate,0.0000,citation_bench.json,invented sources; zero observed
+C - Citation,structured-output path,200/200,citation_bench.json,"0 text-parser fallbacks, 0 parse retries"
+C - Citation,abstention rate,0.1050,citation_bench.json,21/200 on ALCE/ASQA
+C - Citation,ASQA str-EM,0.4743,citation_bench.json,
+C - Citation,cost per question (USD),0.0109,citation_bench.json,"measured, claude-opus-5, prompt caching active"
+D - Verifier,citation recall,0.8388,citation_pr.json,"ALCE definition, our checkpoint (not TRUE/T5-XXL)"
+D - Verifier,citation precision,0.7409,citation_pr.json,penalises citation padding
+D - Verifier,hallucination rate (auto),0.1612,citation_pr.json,verifier-derived UPPER BOUND; see docs/error-analysis.md
+D - Verifier,contradiction rate (auto),0.0680,citation_pr.json,
+D - Verifier,flag rate on real answers,0.2033,verifier_bench.json,
+D - Verifier,calibrated threshold,0.2000,verifier_calibration.json,best-F1 point on a 600-pair slice
+D - Verifier,calibration precision,0.9310,verifier_calibration.json,
+D - Verifier,calibration recall,0.7980,verifier_calibration.json,"LOWER BOUND - positives are lexically verified, not hand-labeled"
+D - Verifier,positive/negative separation,0.6604,verifier_calibration.json,
+E - Abstention,"trigger (b), unanswerable",0.8267,abstention_bench_retrieval_only.json,"refused before generation, so free"
+E - Abstention,"trigger (b), answerable",0.0267,abstention_bench_retrieval_only.json,not over-abstaining
+E - Abstention,"corrective loop, answerable",0.1733,abstention_bench_retrieval_only.json,
+Pipeline,RAGAS-definition faithfulness,,baseline.json,NOT MEASURED - Phase 1 baseline never ran (API credit exhausted)
+Pipeline,baseline answer accuracy,,baseline.json,NOT MEASURED - same reason
+Pipeline,A-E ablation table,,ablation.csv,NOT PRODUCED - requires generation across five variants
+Pipeline,hallucination rate (hand-labeled),,eval/labeled/hallucination.jsonl,NOT MEASURED - set is defined and frozen but unlabeled

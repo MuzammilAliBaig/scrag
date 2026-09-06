@@ -1,392 +1,191 @@
 # SCRAG
 
-**A Self-Correcting, Citation-Verified RAG Framework for Reliable Answers.**
+**A self-correcting, citation-verified RAG framework for reliable answers.**
 
 A document-QA system that answers only from retrieved sources and refuses any claim it cannot back
-with a verified citation.
-
-Ordinary RAG fails in two specific ways, and the whole system exists to close both:
-
-| Failure | Closed by |
-|---|---|
-| States facts that are not in the retrieved sources | Retrieval gating (Module B) + abstention (Module E) |
-| Attaches citations that look valid but do not support the sentence | Citation forcing (Module C) + NLI verification (Module D) |
-
-The measurable contribution is **Module B**, a fine-tuned retrieval evaluator replacing the CRAG
-evaluator. Everything else reproduces published work.
+with a **verified** citation.
 
 ---
 
-## Modules
+## The problem
 
-| Module | File | Responsibility | Status |
-|---|---|---|---|
-| A | `core/retriever.py` | Chunk, embed, store in FAISS | **built** (Phase 1) |
-| B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | **built** (Phase 2) |
-| C | `core/generator.py` | Generate answer, one citation per sentence | **built** (Phase 3) |
-| D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | **built** (Phase 4) |
-| E | `core/repair.py` | Regenerate, drop, or abstain | **built** (Phase 5) |
-| — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | **complete** |
+Retrieval-augmented generation fails in two distinct ways, and conflating them is why "add
+citations" does not fix hallucination.
+
+| Failure | What it looks like | Closed by |
+|---|---|---|
+| **Ungrounded claim** | states a fact that is not in the retrieved sources | retrieval gating (**B**) + abstention (**E**) |
+| **Unsupported citation** | attaches a citation that *looks* valid but does not support the sentence | citation forcing (**C**) + NLI verification (**D**) |
+
+The second is the more dangerous, because a citation is a claim of support. A wrong one makes an
+unverified sentence look checked.
+
+This project measures the two separately at every stage. The gap is real and measurable: a
+word-overlap check scores our citations at **0.9963**, while entailment scores citation precision at
+**0.7409**. Roughly a quarter of individual citations do not support the sentence they are attached
+to — and only the second number can see it.
+
+## The architecture
+
+```
+question → [A] retrieve → [B] grade ──(all wrong)──→ abstain, free
+                              │
+                     (ambiguous) └──→ corrective retrieval ──┐
+                              │        (bounded, loop 1)  ───┘
+                              ▼
+                        [C] generate with one citation per sentence
+                              ▼
+                        [D] verify each citation by entailment
+                              ▼
+                        [E] repair once → re-verify (loop 2) → drop → or abstain
+                              ▼
+                    answer, every sentence cited and verified
+```
+
+Full diagram with both loops: **[docs/architecture.md](docs/architecture.md)**.
+
+Everything except generation runs locally on CPU. Verification is therefore free, so there is no
+incentive to check less — and an abstention triggered by Module B costs nothing at all, because the
+pipeline stops before the paid component is reached.
+
+| Module | File | Role |
+|---|---|---|
+| A | `core/retriever.py` | chunk, embed, FAISS retrieval |
+| B | `core/evaluator.py` | grade chunks; trigger corrective retrieval |
+| C | `core/generator.py` | generate with one citation per sentence |
+| D | `core/verifier.py` | entailment-check every citation |
+| E | `core/repair.py` | repair, drop, or abstain |
+| — | `core/orchestrator.py` | wires A–E; flags drive the ablation |
+
+## Results
+
+Every number below came from a run recorded in `eval/results/`. Full table with sources:
+**[docs/tables/measured_results.md](docs/tables/measured_results.md)**.
+
+![measured metrics](docs/figures/measured_metrics.png)
+
+| Module | Metric | Value |
+|---|---|---|
+| A | retrieval hit rate @ k=5 | **0.8700** |
+| B | per-chunk grading accuracy | **0.9197** (macro-F1 0.8010) |
+| B | query-level action accuracy | 0.8158 — *below* the 0.8750 majority baseline |
+| C | parseable-citation rate | **1.0000** (397/397 sentences), invalid-id rate **0.0000** |
+| D | citation recall / precision | **0.8388** / **0.7409** |
+| D | hallucination rate (auto) | 0.1612 — an **upper bound** |
+| E | refusal on unanswerable questions | **0.8267**, before generation, free |
+| — | cost per question | **$0.01089** measured |
+| — | tests | 165 passing |
+
+### Paper reported X vs we achieved Y
+
+| Concern | Paper | Reported | Source | We achieved |
+|---|---|---|---|---|
+| Evaluator action accuracy | CRAG (Yan et al. 2024) | 0.8430 | Table 4, arXiv:2401.15884v3 | **0.8158** |
+| Citation precision | ALCE (Gao et al. 2023) | *not recorded* | — | 0.7409 |
+| Citation recall | ALCE (Gao et al. 2023) | *not recorded* | — | 0.8388 |
+| Faithfulness | — | n/a | — | *not measured* |
+
+Empty cells are deliberate. A baseline figure without a paper **and** a table behind it is left
+blank rather than filled with a plausible number.
+
+## What is not finished
+
+Stated plainly, because a build log full of unqualified numbers would undercut a project whose
+entire argument is that systems should not assert what they cannot support.
+
+- **The A–E ablation table does not exist.** The harness runs from one command
+  (`eval/run_ablation.py`), but the sweep needs generation across five variants and the API credit
+  balance was exhausted. No cell has been estimated.
+- **Faithfulness has never been measured.** The Phase 1 baseline never ran, for the same reason.
+- **Module B does not beat its baseline.** 0.8158 against CRAG's 0.8430 — and below our own
+  majority-class baseline of 0.8750, which means clearing 0.8430 on this split would not have been a
+  real claim either. This is a finding, not a pending task.
+- **No public URL.** The Docker image builds and runs (3.6 GB, verified); deploying needs an
+  account. See [DEPLOY.md](DEPLOY.md).
+- **CI has not run on GitHub.** The gate is proven locally five ways, including a real regression;
+  that GitHub's runner invokes it is not yet proven. See [CI.md](CI.md).
+
+## Limitations
+
+**Labeling-scheme subjectivity.** Module B's grading accuracy is scored against a rubric this
+project defines (`train/LABELING.md`), frozen before any labeling. CRAG never published a per-chunk
+rubric, so the per-chunk numbers have no published counterpart in either direction. The
+`ambiguous` class is the weakest at F1 0.588 — expected, and the reason the rubric spends most of
+its worked examples on that boundary.
+
+**The hand-labeled sets do not exist.** Three numbers rest on rules rather than people: Module B's
+training labels are rule-derived (`train/weak_labels.py`), Module D's calibration positives are
+*lexically* verified rather than human-verified, and the hallucination set
+(`eval/LABELING_HALLUCINATION.md`) is frozen but unlabeled. The tooling for all three is built
+(`train/label.py`, `train/agreement.py`) and unused. This is the single largest gap between what the
+project claims and what it has evidence for.
+
+**Single-checkpoint NLI verification.** Module D is one model, and the error analysis shows it is
+the dominant error source — most flagged sentences are verifier mistakes, not generator mistakes.
+It also inherits a 512-token premise window, which silently truncates long ALCE passages. An
+ensemble, or AlignScore alongside it, would bound this.
+
+**The `concat` multi-citation policy dilutes entailment.** Measured: 11 of 23 multi-citation
+failures are cases where the best single citation would have passed. One sentence scores 0.998
+against its supporting passage and 0.075 once a second passage is appended. Documented with a fix
+in [docs/error-analysis.md](docs/error-analysis.md); not silently changed.
+
+**Module B does not transfer off its training distribution.** On the four demo policy documents it
+grades almost everything `ambiguous`, and returns `correct` at confidence 0.52 for
+"Who is the Vice-Chancellor?" — a fact those documents never mention. The abstention guarantee still
+holds there, but via Modules C/D/E, so it costs a generation call instead of being free.
+
+**Demo-corpus narrowness.** Four short policy documents, 8 chunks. Enough to demonstrate refusal and
+citation, not enough to evaluate anything.
+
+**Free-tier and model constraints.** Everything is CPU-only; the single GPU job (the Module B
+fine-tune) ran 86 minutes on CPU instead. The generator is the one paid dependency, and running out
+of credit is what left four gates open.
 
 ## Setup
 
-Python **3.11** (the FAISS / torch / sentence-transformers wheels this project needs are reliable
-there; 3.13+ is not).
+Python **3.11** — faiss / torch wheels are not dependable on 3.13+.
 
 ```bash
 py -3.11 -m venv .venv
-.venv/Scripts/activate          # Windows;  source .venv/bin/activate on Unix
+.venv/Scripts/activate          # source .venv/bin/activate on Unix
 pip install -r requirements.txt
-cp .env.example .env            # then put a real ANTHROPIC_API_KEY in it
+cp .env.example .env            # then add a real ANTHROPIC_API_KEY
 ```
-
-## Run
 
 ```bash
-python -m app                   # http://127.0.0.1:8000
-curl localhost:8000/health
-pytest -q
+python -m eval.build_index --split dev --limit 200   # free: builds the corpus and index
+uvicorn app.api:app --reload                          # terminal 1
+streamlit run app/ui.py                               # terminal 2
 ```
 
-`/health` returns status, version, embedding model, generator model, top-k, and whether an API key
-is configured — never the key itself.
+Then **Load demo corpus** in the sidebar. Rehearsed walkthrough: **[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)**.
 
-## Configuration
-
-`config.py` is the single source of every tunable: model names, chunk size, top-k, and the
-evaluator / verifier / abstention thresholds. **No magic numbers anywhere else.** Later phases add
-their thresholds there rather than inline, which is what makes the Phase 6 ablation runner possible
-without rewriting module code.
-
-Thresholds currently marked `PLACEHOLDER` are set by measurement in Phases 2, 4 and 5.
-
-## Secrets and cost
-
-Every component is free except one: **the Claude API, billed per token with no free tier.** It is
-the only thing in the pipeline that leaves your machine — retrieval, grading and verification all
-run locally, so an abstention costs less than an answer.
-
-- `ANTHROPIC_API_KEY` lives in `.env` locally (gitignored), GitHub Secrets in CI, host env vars in
-  deploy. Never committed, never baked into a Docker image.
-- Cost controls, all four required: prompt caching on the stable prefix, the Message Batches API
-  (50% off) for every evaluation run, on-disk result caching, and `messages.count_tokens` before
-  large sweeps.
-
-## Repo layout
-
-```
-app/          FastAPI app (Streamlit UI lands in Phase 7)
-core/         Modules A-E plus the orchestrator and shared types
-train/        Evaluator labeling + fine-tuning scripts (Phase 2)
-eval/         Benchmarks, ablation runner, metrics (Phase 6)
-data/         Indexes and demo corpus (gitignored)
-tests/        Unit tests per module
-config.py     Every tunable
-```
-
-## Evaluation
-
-PopQA ships questions but no corpus, so Module A indexes Wikipedia lead sections for each
-question's subject entity plus a pool of unrelated entities as distractors. Without the
-distractors retrieval is near-trivial and the baseline flatters itself.
+With Docker:
 
 ```bash
-python -m eval.build_index --split dev --limit 200   # free: Wikipedia + local CPU embedding
-python -m eval.check_retrieval --split dev           # free: retrieval hit rate, no API key
-python -m eval.run_baseline --split dev --limit 200  # PAID: calls the Claude API
+docker compose up --build       # API on :8000, UI on :8501
 ```
 
-The split is seeded (`SEED = 42`) and written to `data/splits/`. Every later phase evaluates
-against these exact question ids; resampling invalidates the whole A-E ablation.
+## Documentation
 
-Faithfulness uses the **RAGAS definition** (claims entailed by context / total claims) with our
-own implementation calling Claude directly. RAGAS the library hard-requires `openai`, `langchain`
-and `langchain_openai`, which this project does not take on. Report it as
-"RAGAS-definition faithfulness, own implementation" — it is not a RAGAS number.
-
-## Module B — the contribution
-
-Module B replaces CRAG's T5-large retrieval evaluator with a fine-tuned DeBERTa-v3-small
-cross-encoder. It runs locally on CPU, so grading is free however many chunks are graded.
-
-```bash
-python -m train.build_dataset --out data/eval_labels   # free: weak labels from the index
-python -m train.finetune_evaluator --epochs 3          # CPU ~90 min, free T4 ~3 min
-python -m eval.run_evaluator_bench --split test        # free: the benchmark
-```
-
-**The rubric is frozen.** `train/LABELING.md` defines correct / ambiguous / wrong and was written
-before any labeling. Revising it after seeing results would make the headline number
-unfalsifiable; the fix for a genuine defect is a new dated version plus a full relabel.
-
-**On the CRAG comparison.** CRAG reports **84.3%** (Yan et al. 2024, arXiv:2401.15884v3, Table 4,
-PopQA, T5-large, 1,399-question test split). That figure is the accuracy of the *action* chosen for
-a whole retrieved set (§5.5), **not** per-chunk grading accuracy. So the benchmark reports the two
-separately, prints the majority-class baseline next to both, and lists every reason the comparison
-is not like-for-like. Our action distribution is far more skewed than CRAG's, so beating 84.3 on
-this split is not by itself a real claim.
-
-**Labels are weak, not hand-labeled.** `train/weak_labels.py` derives them by rule, the same
-approach CRAG used (PopQA's gold subject wiki title as the relevance signal). `train/label.py` and
-`train/agreement.py` exist to measure how far that rule diverges from the rubric, via a
-double-labeled human slice.
-
-## Module C — citation-forced generation
-
-Every sentence must cite a passage that was actually retrieved. Citations are 1-based **passage
-numbers**, the ALCE convention: chunk ids like `Ada_Lovelace::3` are error-prone for a model to
-reproduce, and one wrong character would read as an invented source rather than a typo.
-
-```bash
-python -m eval.run_citation_bench --dataset alce --limit 200 --dry-run  # price it first
-python -m eval.run_citation_bench --dataset alce --limit 200            # PAID
-```
-
-Structured outputs (`output_config.format`) are the primary path, turning a parsing problem into a
-schema problem. The text parser in `core/citation.py` remains as a fallback and the fallback rate
-is reported — a schema guarantees *well-formed* citations, never *correct* ones.
-
-**Three failure types, counted separately**, because merging them hides all three:
-
-| Failure | Meaning | Measured in |
-|---|---|---|
-| Parse failure | no readable citation on the sentence | Phase 3 |
-| Invalid id | citation names a passage never retrieved — an invented source | Phase 3 |
-| Unsupported citation | citation is real but the passage does not support the sentence | **Phase 4** |
-
-A sentence that cannot be attributed is **left flagged, never repaired by guessing** the nearest
-chunk. Attaching a plausible source to an unsupported claim is the exact failure this project
-exists to prevent.
-
-## Module D — NLI citation verifier
-
-The cited chunk is the **premise**, the sentence is the **hypothesis**. Runs locally on CPU, so
-verification costs nothing however many sentences are checked.
-
-```bash
-python -m core.verifier --demo                  # per-sentence pass/fail on a worked example
-python -m eval.calibrate_verifier --limit 200   # threshold sweep on a labeled slice
-python -m eval.run_verifier_bench --limit 200   # flag rate on real answers
-```
-
-**Independence is the point.** The generator wrote the sentence *and* chose its citation, so
-checking with the same model would be self-marking. Module D is a separate checkpoint —
-`MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`, chosen because FEVER is fact-verification against
-Wikipedia evidence — and it is never the generator LLM.
-
-**Neutral is not contradiction.** Neutral means the passage does not support the sentence;
-contradiction means it says the opposite. Both fail the gate, but the logs keep them apart: neutral
-usually means retrieval failed, contradiction means generation did.
-
-**Label order is read from the checkpoint, never hardcoded.** This model is
-(entailment, neutral, contradiction); the `cross-encoder/nli-*` family is
-(contradiction, entailment, neutral). Hardcoding either silently inverts every verdict while
-everything still appears to work.
-
-**Multi-citation policy: `concat`** — all cited chunks are joined into one premise and must
-*jointly* support the sentence, matching ALCE citation recall. Measured against the `any` policy the
-difference was 0.2033 vs 0.2057 flag rate, i.e. immaterial on this data.
-
-## Module E — repair and abstention
-
-Three outcomes for a flagged sentence, in order: **repair** it (targeted regeneration of that one
-sentence, then re-verification through Module D), **drop** it if the repair also fails, or
-**abstain** on the whole answer.
-
-```bash
-python -m core.orchestrator --demo --query "What is Boulsa the capital of?"
-python -m eval.run_abstention_bench --limit 150 --no-generation   # free: trigger (b) only
-python -m eval.run_abstention_bench --limit 150                   # PAID: full risk-coverage
-```
-
-**Abstention is a visible product state, never an empty response.** The `FinalAnswer` carries
-`abstained=True` plus a reason naming which of six triggers fired, so the API and UI render it as a
-deliberate refusal.
-
-**A repair never passes by fiat.** A regenerated sentence must pass Module D on the second look or
-it is dropped. Bounded at one attempt — an unbounded loop burns budget and can oscillate between
-two equally unsupported phrasings.
-
-**The fragment guard.** If dropping sentences would leave a disconnected clause, the system abstains
-instead. A stub is worse than a clean refusal.
-
-**Trigger (b) costs nothing.** When Module B grades every retrieved chunk wrong, the pipeline stops
-before the generator is called, so that abstention is free.
-
-## The ablation — the report's key figure
-
-```bash
-python -m eval.run_ablation --all --split dev --limit 150 --dry-run  # price it first
-python -m eval.run_ablation --all --split dev --limit 150            # PAID
-python -m eval.plot_ablation
-```
-
-Variants are `PipelineFlags` over **one** `Orchestrator` (`eval/variants.py`). Five forked
-pipelines drift, and drifted variants stop measuring what they claim to.
-
-| Variant | Adds |
+| Document | Contents |
 |---|---|
-| A | Module A only — the Phase 1 baseline |
-| B | + Module B grading and corrective retrieval |
-| C | + Module C citation forcing |
-| D | + Module D verification (**flags only — same text as C by construction**) |
-| E | + Module E repair and abstention |
+| [docs/architecture.md](docs/architecture.md) | pipeline diagram, both corrective loops, type contracts |
+| [docs/error-analysis.md](docs/error-analysis.md) | twenty real failures with commentary |
+| [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) | seeds, versions, hardware, every run command |
+| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | rehearsed demo, with the abstention trigger named |
+| [docs/tables/](docs/tables/) | all measured results, CSV and markdown |
+| [DEPLOY.md](DEPLOY.md) | Docker, HF Spaces, Render |
+| [CI.md](CI.md) | the regression gate and how to fire it |
+| `train/LABELING.md` | the frozen chunk-grading rubric |
+| `eval/LABELING_HALLUCINATION.md` | the frozen hallucination rubric |
 
-Generation goes through the **Message Batches API** at 50% pricing, keyed by `custom_id` because
-batch results return in any order. `--dry-run` prices the sweep with `count_tokens` before anything
-launches.
+## Stack
 
-**Empty cells stay empty.** A baseline figure without a paper and a table behind it is left blank —
-the ALCE citation cells are blank for exactly this reason, and a test asserts it.
+sentence-transformers (bge-small) · FAISS · DeBERTa-v3-small, fine-tuned · DeBERTa-v3-base
+MNLI-FEVER-ANLI · **Claude API (`claude-opus-5`)** · FastAPI · Streamlit · Docker · GitHub Actions.
 
-## Running the app
-
-```bash
-uvicorn app.api:app --reload      # terminal 1
-streamlit run app/ui.py           # terminal 2
-```
-
-Then click **Load demo corpus** in the sidebar, or upload your own PDF / .txt / .md.
-
-| Endpoint | Does |
-|---|---|
-| `POST /ingest` | upload, chunk, embed, index — per-file status; one bad file never fails the batch |
-| `POST /ingest/demo` | index the bundled demo corpus so the app is never empty |
-| `POST /ask` | run Modules A–E, return the answer with per-sentence citations |
-| `GET /health` | liveness plus index size and model readiness |
-
-**An abstention is a 200 with `abstained: true`**, never an error code. Returning 4xx for a refusal
-would train every client to treat the system working correctly as a fault.
-
-**Quota exhaustion returns a readable 503**, not a stack trace — the failure most likely to happen
-mid-demo. The message says what still works (retrieval, grading, verification) so a demo can carry
-on.
-
-**The app indexes into its own store** (`data/indexes/app.faiss`), separate from the evaluation
-corpus. Uploading a document through the UI must not pollute the corpus every measured number was
-computed against.
-
-### A limitation worth knowing before you demo
-
-Module B was fine-tuned on PopQA entity questions over Wikipedia lead sections. On documents unlike
-those — policy text, contracts, uploaded PDFs — its grades are **out of distribution**. Measured on
-the four demo documents it labels almost every chunk `ambiguous`, and returns `correct` for
-"Who is the Vice-Chancellor?", which they never mention.
-
-The consequence: the *free* pre-generation refusal (trigger b) does not fire reliably on
-out-of-domain documents, so abstention falls to Modules C, D and E. The guarantee still holds — it
-just costs a generation call instead of being free. On in-distribution questions trigger (b) fires
-on 82.67% of unanswerable ones.
-
-## Docker
-
-```bash
-docker build -t scrag:latest .
-docker run -p 8000:8000 -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" scrag:latest
-docker compose up --build      # API on :8000, UI on :8501
-```
-
-**Measured image size: 3.6 GB.** torch alone is 773 MB installed and is unavoidable; `pyarrow` and
-`pandas` (156 + 76 MB) come from streamlit, not from the eval stack, so they stay while the UI
-ships in the same container. Installing torch from the PyTorch CPU index rather than PyPI is what
-keeps this from exceeding 6 GB.
-
-`requirements-runtime.txt` is what the image installs — it drops `datasets`, `matplotlib` and
-`pytest`, which are evaluation-only (3.73 GB → 3.6 GB).
-
-**No secret is ever baked in.** Verified, not assumed: zero layers mention `ANTHROPIC_API_KEY`, and
-a container started without `-e` has zero `ANTHROPIC*` variables in its environment. `.dockerignore`
-excludes `.env`, and that is checked with a throwaway build in `DEPLOY.md`.
-
-**The demo index is built during the image build**, not committed — so the first query is never a
-cold rebuild, and it stays reproducible from a clean clone.
-
-Deployment steps for Hugging Face Spaces and Render: **[DEPLOY.md](DEPLOY.md)**.
-
-## CI regression gate
-
-```bash
-python -m eval.check_regression                              # exit 0 / 1
-python -m eval.check_regression --simulate citation_recall=0.60   # fire it
-```
-
-Two workflows: `test.yml` (unit tests) and `eval.yml` (the gate). **The push-triggered eval job is
-free** — it runs only metrics that need no generation, computing citation P/R from cached Claude
-responses. The paid subset is behind a `workflow_dispatch` input and capped at 50 questions,
-because every CI eval run spends real money on the only paid component here.
-
-Thresholds live in `eval/baseline_metrics.json`, **below** each measured value with a stated margin.
-Two rules the gate enforces that are easy to get wrong:
-
-- **A missing measurement fails the build**, it does not pass. A gate that goes green when the
-  evidence disappears looks like protection and isn't.
-- **`faithfulness` is `null` and gets skipped, loudly.** It has never been measured, and inventing
-  a threshold for it would make the metric this project cares about most unfalsifiable.
-
-Full details and the regression drill: **[CI.md](CI.md)**.
-
-## Build status
-
-**Phase 0 complete.** `python -m app` starts, `/health` returns 200.
-
-**Phase 1 still open.** Module A is built and measured, but the baseline accuracy / faithfulness /
-cost numbers have not been run.
-
-**Phase 2 complete, gate NOT met.** Module B trained and benchmarked; see
-`eval/results/phase2_summary.json`.
-
-**Phase 3 complete, gate MET.**
-
-Measured, from runs that actually executed:
-
-| Measurement | Value |
-|---|---|
-| Corpus | 990 Wikipedia documents, 1,612 chunks |
-| Retrieval hit rate @ k=5 | **0.870** |
-| Top-1 hit rate | **0.800** |
-| Index build | 340 s, CPU |
-| Tests | 72 passed |
-| **Module B** (test split, 152 questions) | |
-| per-chunk grading accuracy | **0.9197** (macro-F1 0.8010) |
-| query-level action accuracy | 0.8158 — below CRAG 0.843 and below the 0.8750 majority baseline |
-| **Module C** (ALCE/ASQA, 200 questions, top-5) | |
-| parseable-citation rate | **1.0000 — gate PASS** (397/397 sentences) |
-| invalid-id rate | **0.0000** |
-| structured-output path | 200/200, 0 fallbacks, 0 retries |
-| abstention rate | 21/200 (10.5%) |
-| ASQA str-EM | 0.4743 |
-| measured cost | $2.18 for 200 questions ($0.0109 each) |
-| **Module D** (same 200 answers, 418 sentences) | |
-| verdicts issued | **418/418 — gate PASS** |
-| calibrated threshold | **0.20** (P 0.9310 / R 0.7980 / F1 0.8594 on a 600-pair slice) |
-| positive/negative separation | +0.6604 |
-| flag rate on real answers | **0.2033** (85 sentences) |
-| of which contradictions | 27 (6.5%) — generation failures |
-| **Citation P/R** (entailment, 397 sentences, free) | |
-| citation recall | **0.8388** |
-| citation precision | **0.7409** |
-| mean citations per sentence | 1.31 |
-| hallucination rate (auto, verifier-derived) | 0.1612 |
-| neutral | 83 (19.9%) — mostly retrieval failures |
-| **Module E** (PopQA dev, 150+150, retrieval+grading only) | |
-| trigger (b) on *unanswerable* questions | **0.8267** (124/150) — caught free, before generation |
-| trigger (b) on *answerable* questions | 0.0267 (4/150) — not over-abstaining |
-| corrective loop, answerable | 0.1733 |
-| Tests | **165 passed** |
-
-**Blocked on API credit.** The account ran out mid-Phase-5:
-`400 invalid_request_error: Your credit balance is too low`. Still unmeasured as a result:
-
-- the **Phase 1 baseline** (accuracy, faithfulness, per-query cost),
-- Phase 5's **full risk-coverage curve** and answered-subset accuracy.
-
-Everything that runs locally is measured. Add credit, then:
-`python -m eval.run_baseline --split dev --limit 150` and
-`python -m eval.run_abstention_bench --limit 150`.
-
-**Prompt caching, measured:** the citation prompt prefix is 758 tokens and *does* cache
-(227,810 cache-read tokens over the run). The Phase 1 plain prompt is 476 tokens — below Opus 5's
-512-token minimum — so it does **not** cache. Failure is silent, which is why this is measured
-rather than assumed.
-
-Phase prompts and the checklist live in `Major-Project/version 1/`.
+Everything is free except the Claude API, which is billed per token. Cost controls in use: prompt
+caching (measured working — 758-token prefix, 227,810 cache reads), on-disk response caching, the
+Message Batches API for evaluation sweeps, and `count_tokens` pricing before any large run.
