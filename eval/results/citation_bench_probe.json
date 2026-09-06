@@ -1,0 +1,210 @@
+{
+  "dataset": "ALCE/ASQA top-5",
+  "questions": 10,
+  "answered": 9,
+  "errors": 0,
+  "abstentions": 1,
+  "gate": {
+    "parseable_citation_rate": 1.0,
+    "parseable_rate_including_abstentions": 0.9524,
+    "abstentions_excluded": 1,
+    "why_excluded": "A refusal makes no claim, and the output contract exempts it from citation. Both rates are reported.",
+    "passes": true,
+    "sentences": 20,
+    "sentences_with_valid_citation": 20,
+    "questions_fully_cited": 9
+  },
+  "hard_failures": {
+    "invalid_citation_ids": 0,
+    "sentences_with_invalid_id": 0,
+    "invalid_id_rate": 0.0
+  },
+  "output_path": {
+    "structured_path": 10,
+    "text_fallback_path": 0,
+    "fallback_rate": 0.0,
+    "parse_retries": 0
+  },
+  "citation_quality_proxy": {
+    "lexical_support_proxy": 1.0,
+    "WARNING": "Word-overlap proxy only. NOT ALCE citation precision/recall, which requires NLI entailment (Module D, Phase 4). Do not report as ALCE."
+  },
+  "answer_correctness": {
+    "asqa_str_em": 0.4537
+  },
+  "alce_baseline": "NOT AVAILABLE - the ALCE paper is not recorded in this project's wiki. Our numbers are reported unqualified.",
+  "api_usage": {
+    "calls": 10,
+    "api_calls": 0,
+    "cache_hits_on_disk": 10,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "prompt_cache_working": false,
+    "total_cost_usd": 0.0,
+    "cost_per_query_usd": 0.0,
+    "mean_latency_s": 0.0
+  },
+  "config": {
+    "model": "claude-opus-5",
+    "effort": "high",
+    "structured_outputs": true,
+    "max_citation_retries": 2,
+    "top_k": 5
+  },
+  "examples": [
+    {
+      "sample_id": "-7013890438520559398",
+      "question": "Who has the highest goals in world football?",
+      "sentences": 4,
+      "with_valid_citation": 4,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "The sources differ: FIFA recognizes Pelé's 1281 goals as the highest total achieved by a professional footballer. The Rec.Sport.Soccer Statistics Foundation instead estimates Josef Bican scored at least 805 goals in competitive matches, which would make him the most prolific scorer of all time, ahead of Romário (772) and Pelé's 767 official goals. The IFFHS credited Bican with a record 600 league goals and at least 1468 goals overall, awarding him the \"Golden Ball\" as the greatest goalscorer of the last century. Separately, the Football Association of Zambia claims Godfrey Chitalu scored 116 goals (possibly 117) in the 1972 calendar year, though FIFA declined to ratify it.",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.3333333333333333,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "7089015503030534342",
+      "question": "Who is the original artist of sound of silence?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "\"The Sound of Silence\" is originally by the American music duo Simon & Garfunkel. It was written by Paul Simon over several months in 1963 and 1964 and recorded in March 1964 at Columbia Studios in New York City for the duo's debut album, \"Wednesday Morning, 3 A.M.\".",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.6666666666666666,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "8793099883447006698",
+      "question": "When was the first apple i phone made?",
+      "sentences": 3,
+      "with_valid_citation": 3,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "The first-generation iPhone was officially announced on January 9, 2007, and released in the United States on June 29, 2007. Steve Jobs unveiled it in a keynote at the Macworld Conference & Expo in San Francisco. Its development dated back to 2005, when Jobs conceptualized a device users could directly interface with through the display.",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.5,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "-881464876144297194",
+      "question": "Who played the weasley brothers in harry potter?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "Identical twin British actors James and Oliver Phelps played Fred and George Weasley in the \"Harry Potter\" film series, with James as Fred and Oliver as George. Chris Rankin played their brother Percy Weasley, winning the role in September 2000.",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.3333333333333333,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "1650309494326541834",
+      "question": "How many state parks are there in virginia?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "Virginia has 34 state parks, along with 17 state forests. They are run by the Department of Conservation and Recreation and the Department of Forestry.",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.0,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "2378678654868379935",
+      "question": "Who performed at the champions league final 2018?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "Lipa performed at the opening ceremony preceding the 2018 UEFA Champions League Final. Jamaican rapper Sean Paul joined her as a special guest to perform their collaborative song \"No Lie\".",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.25,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "-3322598412088356524",
+      "question": "Who killed the man in thelma and louise?",
+      "sentences": 1,
+      "with_valid_citation": 0,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 0.0,
+      "abstained": true,
+      "answer": "I cannot answer this from the provided sources.",
+      "citation_support_proxy": null,
+      "str_em": 0.0,
+      "error": null,
+      "uncited_sentences": [
+        "I cannot answer this from the provided sources."
+      ]
+    },
+    {
+      "sample_id": "-4633355453516911545",
+      "question": "Who plays charlie on it's always sunny?",
+      "sentences": 1,
+      "with_valid_citation": 1,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "Charlie Kelly is portrayed by Charlie Day.",
+      "citation_support_proxy": 1.0,
+      "str_em": 1.0,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "-7464414779466400769",
+      "question": "How many times have the lakers won the finals?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "The Lakers have won 16 NBA championships. Their 16th title came in the 2010 NBA Finals, when they defeated the Boston Celtics in seven games, marking their 11th championship since moving to Los Angeles.",
+      "citation_support_proxy": 1.0,
+      "str_em": 1.0,
+      "error": null,
+      "uncited_sentences": []
+    },
+    {
+      "sample_id": "1562758409663917015",
+      "question": "How many states in india are under congress?",
+      "sentences": 2,
+      "with_valid_citation": 2,
+      "sentences_with_invalid_id": 0,
+      "invalid_ids": 0,
+      "parseable_rate": 1.0,
+      "abstained": false,
+      "answer": "The Indian National Congress holds power with majority support in four states: Punjab, Chhattisgarh, Rajasthan and Madhya Pradesh. It additionally shares power in Karnataka and Puducherry with alliance partners.",
+      "citation_support_proxy": 1.0,
+      "str_em": 0.0,
+      "error": null,
+      "uncited_sentences": []
+    }
+  ]
+}

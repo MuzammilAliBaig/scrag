@@ -95,8 +95,16 @@ class GeneratorConfig:
     use_batch_api_for_eval: bool = True
     cache_responses_on_disk: bool = True
     response_cache_dir: Path = field(default_factory=lambda: REPO_ROOT / "eval" / "results" / ".api_cache")
-    # Citation format the Phase 3 parser must accept, e.g. "[1]".
+    # Citations are 1-based passage numbers, the ALCE convention. Chunk ids
+    # like "Ada_Lovelace::3" are error-prone for a model to reproduce, and a
+    # single wrong character would read as an invented source.
     citation_pattern: str = r"\[(\d+)\]"
+    # Structured outputs make the answer a schema-validated object instead of
+    # free text to regex. The text parser stays as a measured fallback: a
+    # schema guarantees well-formed citations, never correct ones.
+    use_structured_outputs: bool = True
+    # Bounded retry when output comes back malformed or uncited.
+    max_citation_retries: int = 2
     request_timeout_s: float = 120.0
     max_retries: int = 3
     effort: str = "high"          # low | medium | high | xhigh | max

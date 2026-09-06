@@ -23,7 +23,7 @@ evaluator. Everything else reproduces published work.
 |---|---|---|---|
 | A | `core/retriever.py` | Chunk, embed, store in FAISS | **built** (Phase 1) |
 | B | `core/evaluator.py` | Grade chunks; trigger corrective retrieval | **built** (Phase 2) |
-| C | `core/generator.py` | Generate answer, one citation per sentence | plain generator built; citations Phase 3 |
+| C | `core/generator.py` | Generate answer, one citation per sentence | **built** (Phase 3) |
 | D | `core/verifier.py` | NLI-check each cited chunk entails its sentence | stub (Phase 4) |
 | E | `core/repair.py` | Regenerate, drop, or abstain | stub (Phase 5) |
 | — | `core/orchestrator.py` | Wires A-E; flags drive the ablation variants | stub |
@@ -131,11 +131,44 @@ approach CRAG used (PopQA's gold subject wiki title as the relevance signal). `t
 `train/agreement.py` exist to measure how far that rule diverges from the rubric, via a
 double-labeled human slice.
 
+## Module C — citation-forced generation
+
+Every sentence must cite a passage that was actually retrieved. Citations are 1-based **passage
+numbers**, the ALCE convention: chunk ids like `Ada_Lovelace::3` are error-prone for a model to
+reproduce, and one wrong character would read as an invented source rather than a typo.
+
+```bash
+python -m eval.run_citation_bench --dataset alce --limit 200 --dry-run  # price it first
+python -m eval.run_citation_bench --dataset alce --limit 200            # PAID
+```
+
+Structured outputs (`output_config.format`) are the primary path, turning a parsing problem into a
+schema problem. The text parser in `core/citation.py` remains as a fallback and the fallback rate
+is reported — a schema guarantees *well-formed* citations, never *correct* ones.
+
+**Three failure types, counted separately**, because merging them hides all three:
+
+| Failure | Meaning | Measured in |
+|---|---|---|
+| Parse failure | no readable citation on the sentence | Phase 3 |
+| Invalid id | citation names a passage never retrieved — an invented source | Phase 3 |
+| Unsupported citation | citation is real but the passage does not support the sentence | **Phase 4** |
+
+A sentence that cannot be attributed is **left flagged, never repaired by guessing** the nearest
+chunk. Attaching a plausible source to an unsupported claim is the exact failure this project
+exists to prevent.
+
 ## Build status
 
 **Phase 0 complete.** `python -m app` starts, `/health` returns 200.
 
-**Phase 1 partially complete.** Module A is built and measured; generation is blocked on an API key.
+**Phase 1 still open.** Module A is built and measured, but the baseline accuracy / faithfulness /
+cost numbers have not been run.
+
+**Phase 2 complete, gate NOT met.** Module B trained and benchmarked; see
+`eval/results/phase2_summary.json`.
+
+**Phase 3 complete, gate MET.**
 
 Measured, from runs that actually executed:
 
@@ -145,9 +178,24 @@ Measured, from runs that actually executed:
 | Retrieval hit rate @ k=5 | **0.870** |
 | Top-1 hit rate | **0.800** |
 | Index build | 340 s, CPU |
-| Tests | 21 passed |
+| Tests | 72 passed |
+| **Module B** (test split, 152 questions) | |
+| per-chunk grading accuracy | **0.9197** (macro-F1 0.8010) |
+| query-level action accuracy | 0.8158 — below CRAG 0.843 and below the 0.8750 majority baseline |
+| **Module C** (ALCE/ASQA, 200 questions, top-5) | |
+| parseable-citation rate | **1.0000 — gate PASS** (397/397 sentences) |
+| invalid-id rate | **0.0000** |
+| structured-output path | 200/200, 0 fallbacks, 0 retries |
+| abstention rate | 21/200 (10.5%) |
+| ASQA str-EM | 0.4743 |
+| measured cost | $2.18 for 200 questions ($0.0109 each) |
 
-Not yet measured, because `ANTHROPIC_API_KEY` is unset: baseline answer accuracy, faithfulness,
-and per-query cost. The Phase 1 gate is not met until those exist.
+Still unmeasured: the **Phase 1 baseline** (answer accuracy, faithfulness, per-query cost on
+PopQA). The key is now set, so `python -m eval.run_baseline --split dev --limit 200` will close it.
+
+**Prompt caching, measured:** the citation prompt prefix is 758 tokens and *does* cache
+(227,810 cache-read tokens over the run). The Phase 1 plain prompt is 476 tokens — below Opus 5's
+512-token minimum — so it does **not** cache. Failure is silent, which is why this is measured
+rather than assumed.
 
 Phase prompts and the checklist live in `Major-Project/version 1/`.

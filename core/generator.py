@@ -96,6 +96,10 @@ class GenerationError(RuntimeError):
 class PlainGenerator:
     """Stuff the top-k chunks into a prompt and answer. No citations (Phase 3)."""
 
+    # Subclasses override this; count_prompt_tokens reads it so the measured
+    # cacheable-prefix length always matches the prompt actually sent.
+    SYSTEM_PROMPT = PLAIN_SYSTEM_PROMPT
+
     def __init__(self, cfg: config.GeneratorConfig = config.GENERATOR) -> None:
         self.cfg = cfg
         self._client = None
@@ -261,7 +265,301 @@ class PlainGenerator:
         """
         counted = self.client.messages.count_tokens(
             model=self.cfg.model,
-            system=[{"type": "text", "text": PLAIN_SYSTEM_PROMPT}],
+            system=[{"type": "text", "text": self.SYSTEM_PROMPT}],
             messages=[{"role": "user", "content": "x"}],
         )
         return counted.input_tokens
+
+
+# ==========================================================================
+# Module C - Phase 3: citation-forced generation
+# ==========================================================================
+
+CITATION_SYSTEM_PROMPT = """You are a question-answering assistant that answers strictly from a numbered set of retrieved source passages, and attaches a citation to every sentence you write.
+
+You will be given a question and a numbered list of passages. You must answer using only those passages.
+
+THE OUTPUT CONTRACT
+
+1. Every sentence of your answer must cite at least one passage. A sentence without a citation is a failure, even if what it says is true.
+2. Cite by passage number in square brackets: [1] for one passage, [1][3] or [1, 3] when a sentence genuinely draws on more than one.
+3. Cite only passage numbers that appear in the list you were given. Never cite a number outside that range, and never invent a passage.
+4. Cite the passage that actually supports the sentence. A citation that merely looks plausible is worse than no answer at all, because it makes an unsupported claim appear verified.
+5. Only cite passages that support the specific claim in that sentence. Do not attach every passage to every sentence to be safe: a citation is a claim of support, and a wrong one is a false claim.
+
+WHAT TO WRITE
+
+6. Answer only from the passages. Do not use outside knowledge, and do not fill gaps from memory, even when you are confident the answer is well known.
+7. If the passages do not contain the answer, say exactly: I cannot answer this from the provided sources. That sentence alone needs no citation, and you must write nothing else.
+8. Be direct and factual. One or two short sentences is usually right. Do not restate the question, do not add preamble such as "Based on the passages", and do not explain your reasoning.
+9. When the question asks for a single fact - a name, a place, an occupation, a date, a nationality - state that fact plainly and cite the passage it came from.
+10. Keep each sentence to a single claim wherever you can. A sentence combining two facts from two passages is harder to verify and harder to repair.
+11. Reproduce names of people, places and works exactly as the passages spell them, including diacritics.
+12. Passages may be irrelevant, may contradict each other, or may concern a different entity with a similar name. Ignore passages that do not bear on the question rather than forcing them into an answer.
+
+The passages you are given are the complete evidence available. Nothing outside them is admissible, and every sentence you write will be checked against the passage it cites."""
+
+# Schema for structured output. A strict schema requires both an explicit
+# `required` list and `additionalProperties: false` at every object level.
+CITATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "sentences": {
+            "type": "array",
+            "description": "The answer, one entry per sentence, in order.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": (
+                            "One sentence of the answer, with NO citation markers "
+                            "inside it. Citations belong in the citations field."
+                        ),
+                    },
+                    "citations": {
+                        "type": "array",
+                        "description": (
+                            "1-based passage numbers supporting THIS sentence. "
+                            "Empty only for the exact refusal sentence."
+                        ),
+                        "items": {"type": "integer"},
+                    },
+                },
+                "required": ["text", "citations"],
+                "additionalProperties": False,
+            },
+        },
+        "abstained": {
+            "type": "boolean",
+            "description": "True when the passages do not contain the answer.",
+        },
+    },
+    "required": ["sentences", "abstained"],
+    "additionalProperties": False,
+}
+
+
+class CitationGenerator(PlainGenerator):
+    """Module C. Generate an answer in which every sentence cites a passage.
+
+    Inherits the client, disk cache, usage accounting and error chain from
+    PlainGenerator, replacing the prompt and the output handling.
+
+    Structured output is the primary path: it turns a parsing problem into a
+    schema problem, the biggest reliability win available in this phase. The
+    text parser in core/citation.py stays as a fallback, and how often each
+    path is used is reported - a schema guarantees well-formed citations,
+    never correct ones.
+    """
+
+    SYSTEM_PROMPT = CITATION_SYSTEM_PROMPT
+
+    def __init__(self, cfg: config.GeneratorConfig = config.GENERATOR) -> None:
+        super().__init__(cfg)
+        self.retry_count = 0
+        self.structured_used = 0
+        self.fallback_used = 0
+
+    # -- prompt ----------------------------------------------------------
+    def format_context(self, context: list[Chunk]) -> str:
+        """Number the passages 1..k. The number is the citation handle."""
+        return "\n\n".join(f"[{i + 1}] {c.text}" for i, c in enumerate(context))
+
+    def build_prompt(self, question: str, context: list[Chunk]) -> str:
+        return f"Passages:\n{self.format_context(context)}\n\nQuestion: {question}"
+
+    def _cache_key(self, question: str, context: list[Chunk]) -> str:
+        # Separate namespace from the plain generator, so Phase 1 and Phase 3
+        # answers to the same question never collide in the disk cache.
+        payload = json.dumps(
+            {
+                "module": "C-cited",
+                "model": self.cfg.model,
+                "system": CITATION_SYSTEM_PROMPT,
+                "structured": self.cfg.use_structured_outputs,
+                "question": question,
+                "texts": [c.text for c in context],
+                "effort": self.cfg.effort,
+            },
+            sort_keys=True,
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
+
+    # -- API call --------------------------------------------------------
+    def _call(self, question: str, context: list[Chunk], structured: bool):
+        kwargs = dict(
+            model=self.cfg.model,
+            max_tokens=self.cfg.max_tokens,
+            system=[
+                {
+                    "type": "text",
+                    "text": CITATION_SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+            messages=[{"role": "user", "content": self.build_prompt(question, context)}],
+        )
+        if self.cfg.thinking:
+            kwargs["thinking"] = {"type": self.cfg.thinking}
+
+        output_config: dict = {"effort": self.cfg.effort}
+        if structured:
+            output_config["format"] = {"type": "json_schema", "schema": CITATION_SCHEMA}
+        kwargs["output_config"] = output_config
+
+        return self.client.messages.create(**kwargs)
+
+    def generate(self, question: str, context: list[Chunk]) -> CitedDraft:
+        """Produce a cited draft. Bounded retry on malformed output."""
+        import anthropic
+
+        key = self._cache_key(question, context)
+        cached = self._cache_read(key)
+        if cached is not None:
+            payload = json.loads(cached)
+            usage = GenerationUsage(cached=True)
+            self.usage_log.append(usage)
+            return self._draft_from_payload(question, context, payload, usage)
+
+        structured = self.cfg.use_structured_outputs
+        last_error: str | None = None
+
+        for attempt in range(self.cfg.max_citation_retries + 1):
+            if attempt:
+                self.retry_count += 1
+            started = time.time()
+            try:
+                response = self._call(question, context, structured)
+            except anthropic.NotFoundError as exc:
+                raise GenerationError(f"model {self.cfg.model!r} not found: {exc}") from exc
+            except anthropic.RateLimitError as exc:
+                last_error = f"rate_limited: {exc}"
+                continue
+            except anthropic.APIStatusError as exc:
+                if exc.status_code >= 500:
+                    last_error = f"server_error_{exc.status_code}: {exc}"
+                    continue
+                if structured:
+                    # A 400 on the structured path is most likely the schema.
+                    # Drop to free text and parse rather than losing the query.
+                    last_error = f"structured_rejected_{exc.status_code}: {exc}"
+                    structured = False
+                    continue
+                raise GenerationError(
+                    f"API rejected the request ({exc.status_code}): {exc}"
+                ) from exc
+            except anthropic.APIConnectionError as exc:
+                last_error = f"connection_error: {exc}"
+                continue
+
+            usage = GenerationUsage(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                cache_creation_input_tokens=getattr(
+                    response.usage, "cache_creation_input_tokens", 0) or 0,
+                cache_read_input_tokens=getattr(
+                    response.usage, "cache_read_input_tokens", 0) or 0,
+                latency_s=time.time() - started,
+            )
+            self.usage_log.append(usage)
+            raw = "".join(b.text for b in response.content if b.type == "text").strip()
+
+            payload = self._payload_from_raw(raw, structured)
+            if payload is None:
+                # Schema path returned unusable JSON: retry, then fall back.
+                last_error = "unparseable_structured_output"
+                structured = False
+                continue
+
+            payload["_path"] = "structured" if structured else "text"
+            payload["_raw"] = raw
+            self._cache_write(key, json.dumps(payload))
+            return self._draft_from_payload(question, context, payload, usage)
+
+        # Every attempt failed. Return an empty draft carrying the error rather
+        # than inventing a citation.
+        return CitedDraft(
+            question=question,
+            sentences=[],
+            context=context,
+            raw_text=f"GENERATION FAILED: {last_error}",
+            usage={},
+        )
+
+    def _payload_from_raw(self, raw: str, structured: bool) -> dict | None:
+        """Normalise either output path into {sentences: [{text, citations}]}."""
+        from core import citation as citation_mod
+
+        if structured:
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                return None
+            if not isinstance(data, dict) or "sentences" not in data:
+                return None
+            return data
+
+        parsed = citation_mod.parse_cited_text(raw)
+        return {
+            "sentences": [{"text": p.raw, "citations": p.numbers} for p in parsed],
+            "abstained": False,
+        }
+
+    def _draft_from_payload(
+        self, question: str, context: list[Chunk], payload: dict, usage: GenerationUsage
+    ) -> CitedDraft:
+        from core import citation as citation_mod
+
+        path = payload.get("_path", "structured")
+        if path == "structured":
+            self.structured_used += 1
+        else:
+            self.fallback_used += 1
+
+        # Even on the structured path, run the text parser over each sentence:
+        # models sometimes ALSO write "[2]" inside the text field, and those
+        # markers must be stripped from the prose and merged with the field.
+        parsed: list[citation_mod.ParsedSentence] = []
+        for entry in payload.get("sentences", []):
+            text = (entry.get("text") or "").strip()
+            if not text:
+                continue
+            inline = citation_mod.parse_sentence(text)
+            numbers = list(
+                dict.fromkeys(
+                    [int(n) for n in entry.get("citations", []) if isinstance(n, int)]
+                    + inline.numbers
+                )
+            )
+            parsed.append(
+                citation_mod.ParsedSentence(
+                    text=inline.text,
+                    raw=text,
+                    numbers=numbers,
+                    had_citation=bool(numbers),
+                )
+            )
+
+        sentences, stats = citation_mod.validate(parsed, context)
+        return CitedDraft(
+            question=question,
+            sentences=sentences,
+            context=context,
+            raw_text=payload.get("_raw", ""),
+            usage={
+                **{k: v for k, v in usage.as_dict().items() if isinstance(v, int)},
+                "abstained": bool(payload.get("abstained")),
+                **{f"parse_{k}": v for k, v in stats.as_dict().items() if isinstance(v, int)},
+            },
+        )
+
+    def path_totals(self) -> dict[str, int | float]:
+        """Which output path was used, and how often a retry was needed."""
+        total = self.structured_used + self.fallback_used
+        return {
+            "structured_path": self.structured_used,
+            "text_fallback_path": self.fallback_used,
+            "fallback_rate": round(self.fallback_used / total, 4) if total else 0.0,
+            "parse_retries": self.retry_count,
+        }

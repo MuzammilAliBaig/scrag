@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import config
 from core.evaluator import RetrievalEvaluator
-from core.generator import PlainGenerator
+from core.generator import CitationGenerator, PlainGenerator
 from core.repair import Repairer
 from core.retriever import Retriever
 from core.types import Chunk, ChunkLabel, FinalAnswer, RetrievalAction
@@ -63,17 +63,21 @@ class Orchestrator:
         self,
         retriever: Retriever | None = None,
         evaluator: RetrievalEvaluator | None = None,
-        generator: PlainGenerator | None = None,
+        generator: PlainGenerator | None = None,   # CitationGenerator is a subclass
         verifier: NLIVerifier | None = None,
         repairer: Repairer | None = None,
         flags: PipelineFlags | None = None,
     ) -> None:
         self.retriever = retriever or Retriever()
         self.evaluator = evaluator or RetrievalEvaluator()
-        self.generator = generator or PlainGenerator()
+        self.flags = flags or PipelineFlags()
+        # Variant C onward forces citations; variants A and B use the plain
+        # generator, so the ablation compares like with like on everything else.
+        self.generator = generator or (
+            CitationGenerator() if self.flags.force_citations else PlainGenerator()
+        )
         self.verifier = verifier or NLIVerifier()
         self.repairer = repairer or Repairer()
-        self.flags = flags or PipelineFlags()
 
     # -- Modules A + B ---------------------------------------------------
     def retrieve_and_grade(self, question: str) -> tuple[list[Chunk], RetrievalTrace]:
