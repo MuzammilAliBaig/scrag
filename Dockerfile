@@ -110,12 +110,12 @@ USER scrag
 # produced it and would not be reproducible from a clean clone.
 RUN python -m app.build_demo_index
 
-EXPOSE 8000 8501
+EXPOSE 8000
 
 # Readiness, not just liveness: the app reports index and model state so a
 # warming container is distinguishable from a broken one.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${PORT}/health" || exit 1
 
-# Default: the API. docker-compose overrides this for the UI service.
+# The API also serves the landing page at /, so this is the only process.
 CMD ["sh", "-c", "uvicorn app.api:app --host 0.0.0.0 --port ${PORT}"]

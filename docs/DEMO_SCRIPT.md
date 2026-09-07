@@ -5,11 +5,9 @@ That should be rehearsed, not discovered live. Every question below has been run
 column is what actually happened, not what should happen.
 
 ```bash
-uvicorn app.api:app --reload     # terminal 1
-streamlit run app/ui.py          # terminal 2
+uvicorn app.api:app --reload                 # then open http://127.0.0.1:8000
+curl -X POST localhost:8000/ingest/demo      # 4 policy documents, 8 chunks
 ```
-
-Sidebar → **Load demo corpus** (4 policy documents, 8 chunks).
 
 ---
 
@@ -86,16 +84,15 @@ component is never reached.
 
 ## Part 3 — showing the machinery
 
-Expand **"How this answer was produced"** under any answer. It shows the Module B action, whether
-corrective retrieval fired, how many sentences were flagged, how many repairs succeeded, and how
-many sentences were dropped.
+The trace line under every answer shows the Module B action, whether corrective retrieval fired,
+and how many sentences were flagged, repaired and dropped.
 
 A **dropped** sentence is the most persuasive thing on screen: it is a claim the system wrote,
 failed to verify, tried once to repair, failed again, and removed rather than show you.
 
-The sidebar toggles switch modules off. Turning **D — NLI verification** off and re-asking shows
-the same answer with no verification badges: the clearest way to show what Module D contributes
-without describing it.
+The toggles under the composer switch modules off. Turning **D · verification** off and re-asking
+shows the same answer with no verification badges: the clearest way to show what Module D
+contributes without describing it.
 
 ---
 

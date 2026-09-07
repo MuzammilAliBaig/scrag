@@ -52,10 +52,10 @@ curl localhost:8000/health     # index size, model readiness
 curl localhost:8000/ready      # 200 when it can serve; 503 while warming
 ```
 
-### API and UI together
+### With compose
 
 ```bash
-docker compose up --build      # API on :8000, UI on :8501
+docker compose up --build      # http://localhost:8000
 ```
 
 ---
@@ -93,7 +93,8 @@ docker run -p 8000:8000 \
 ```
 
 or push it to a private HF repo and pull it in a build stage. If you deploy without it, turn Module
-B off in the UI sidebar so the failure is a deliberate configuration rather than a crash.
+B off with the toggle under the composer, so the failure is a deliberate configuration rather than
+a crash.
 
 ---
 
@@ -117,13 +118,12 @@ UI banner make it visible instead of confusing.
 
 ## 4. Deploy to Render (alternative free tier)
 
-`deploy/render.yaml` defines two services from the one Dockerfile.
+`deploy/render.yaml` defines a single service. The API serves the landing page at `/`, so there
+is no separate frontend host to wire up.
 
 1. **New → Blueprint**, point it at the repository.
 2. Render reads `deploy/render.yaml`. `ANTHROPIC_API_KEY` is declared `sync: false`, so it is
    **not** read from the file — set it in **Environment** on the `scrag-api` service.
-3. After `scrag-api` first deploys, copy its public URL into `SCRAG_API_URL` on `scrag-ui`. The
-   value in the file is a placeholder.
 
 Free Render instances sleep after ~15 minutes idle. First request after sleep takes 30–60 seconds.
 

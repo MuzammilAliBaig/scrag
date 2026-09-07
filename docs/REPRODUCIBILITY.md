@@ -29,7 +29,6 @@ faiss / torch / sentence-transformers wheels are not dependable there. Use 3.11.
 | anthropic | 1.4.0 |
 | datasets | 5.0.1 |
 | fastapi / uvicorn | 0.141.1 / 0.52.4 |
-| streamlit | 1.63.0 |
 
 Full sets: `requirements.txt` (development and evaluation) and `requirements-runtime.txt` (what the
 Docker image installs).

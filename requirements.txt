@@ -35,8 +35,7 @@ tiktoken==0.14.0            # pulled in by that same tokenizer-conversion path;
 # --- Phase 6 figures ---
 matplotlib==3.11.0
 
-# --- Phase 7 API + UI ---
-streamlit==1.63.0
+# --- Phase 7 API + landing page ---
 pypdf==6.17.0               # PDF text extraction for /ingest
 python-multipart==0.0.32    # required by FastAPI for file uploads
 

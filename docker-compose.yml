@@ -1,6 +1,6 @@
-# Local API + UI.
+# Local API. It serves both the JSON endpoints and the landing page at /.
 #
-#   docker compose up --build
+#   docker compose up --build   ->  http://localhost:8000
 #
 # The key comes from the host environment, never from the image:
 #   PowerShell:  $env:ANTHROPIC_API_KEY = "sk-ant-..."
@@ -30,18 +30,3 @@ services:
       # The fine-tuned Module B checkpoint is not in the image (it is not a
       # public artifact). Mount it read-only if you have trained one.
       - ./data/models:/home/scrag/app/data/models:ro
-
-  ui:
-    image: scrag:latest
-    depends_on:
-      api:
-        condition: service_healthy
-    ports:
-      - "8501:8501"
-    environment:
-      SCRAG_API_URL: "http://api:8000"
-    command: >
-      streamlit run app/ui.py
-      --server.port=8501
-      --server.address=0.0.0.0
-      --server.headless=true

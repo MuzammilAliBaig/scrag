@@ -41,7 +41,7 @@ been checked by a separate model that never saw the sentence being written.
 | Verifier | `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli` | trained on FEVER, which is fact-checking against Wikipedia — exactly this task |
 | Generator | **Claude API** (`claude-opus-5`) | the only paid part of the whole project |
 | Backend | FastAPI + Uvicorn | |
-| Frontend | Streamlit | fastest way to a demo that shows citations properly |
+| Frontend | One static HTML file | no framework, no build step; FastAPI serves it itself |
 | Packaging | Docker | multi-stage, CPU-only wheels, 3.6 GB |
 | CI | GitHub Actions | with a regression gate that actually fails the build |
 | Datasets | PopQA, ALCE (ASQA) | public, standard, and free |
@@ -73,8 +73,12 @@ before the generator is ever called — those refusals cost nothing at all.
 it fails again it's dropped. If too much of the answer fails, or dropping would leave a fragment,
 the whole thing becomes a clean refusal rather than a stub.
 
-**You can switch the modules off.** The UI has toggles for each stage, so you can see what each one
+**You can switch the modules off.** The page has a toggle per stage, so you can see what each one
 actually contributes instead of taking my word for it.
+
+**One page, no build step.** The whole frontend is a single static HTML file - no React, no
+Tailwind, no bundler, no `node_modules`. FastAPI serves it at `/`, which is also why its upload
+button posts to `/ingest` on the same origin and does real work rather than miming it.
 
 **It knows what it costs.** Token usage and dollar cost are measured per run — **$0.01089 per
 question**, measured, not estimated.
@@ -83,18 +87,14 @@ question**, measured, not estimated.
 
 ## Keyboard shortcuts
 
-**There are no custom keyboard shortcuts.** The UI is Streamlit, and I didn't add any bindings on
-top of it — so rather than invent a list, here are the ones Streamlit gives you for free:
-
 | Key | Does |
 |---|---|
-| `R` | rerun the app |
-| `C` | clear the cache |
-| `Ctrl` + `Enter` | submit from a multi-line text box |
-| `Esc` | close an expanded panel |
+| `Enter` | send the question |
+| `Shift` + `Enter` | new line inside the composer |
+| `Esc` | close the mobile menu |
 
-Most of the real work happens on the command line, and those commands are in
-[Running the project](#running-the-project).
+That is the honest list - three bindings, all in the composer. Everything else is a click, and the
+heavy lifting happens on the command line ([Running the project](#running-the-project)).
 
 ---
 
@@ -130,9 +130,14 @@ decide.
 about asserts that no unverified sentence can reach the output on *any* path.
 
 **Phase 6–9: harness, app, Docker, CI.** The ablation runner treats variants as config flags over
-one code path, because five forked pipelines drift and stop measuring what they claim to. Then
-FastAPI + Streamlit, a Docker image, and a CI gate — which I fired five ways, including by genuinely
+one code path, because five forked pipelines drift and stop measuring what they claim to. Then the
+FastAPI service, a Docker image, and a CI gate — which I fired five ways, including by genuinely
 crippling the verifier and watching citation recall fall from 0.8388 to 0.4509 and the build go red.
+
+**The frontend, twice.** I built it in Streamlit first because it was quick, then replaced it with a
+single static HTML page. Streamlit dragged `pyarrow` and `pandas` into the Docker image for a UI
+that was four widgets and a list, and it owned the page so I could not control the layout. One
+hand-written file does the same job in 44 KB with no build step.
 
 **Phase 10: writing it up.** Doing the error analysis is what caught my own mistake — see below.
 
@@ -222,19 +227,14 @@ and free — and the app tells you clearly when generation is unavailable instea
 
 ### Run the app
 
-Two terminals:
+One process. The API serves the page as well as the JSON endpoints:
 
 ```bash
-uvicorn app.api:app --reload     # terminal 1 — the API on :8000
-streamlit run app/ui.py          # terminal 2 — the UI on :8501
+uvicorn app.api:app --reload     # http://127.0.0.1:8000
 ```
 
-The **landing page** is at <http://127.0.0.1:8000> — a single static file
-(`app/static/index.html`, no frameworks) served by the API itself, so its upload button posts to
-`/ingest` on the same origin and genuinely indexes what you give it.
-
-The full workbench is the Streamlit app on :8501. Click **Load demo corpus** in the sidebar, then
-try:
+Open <http://127.0.0.1:8000>. Upload your own documents with the **+** button, or seed the bundled
+demo corpus with `curl -X POST localhost:8000/ingest/demo`, then ask:
 
 - *"How much of my tuition is refunded if I withdraw in week four?"* — answers, with citations
 - *"How much does a parking permit cost?"* — refuses, and tells you why
@@ -242,7 +242,7 @@ try:
 Or with Docker:
 
 ```bash
-docker compose up --build        # API on :8000, UI on :8501
+docker compose up --build        # http://localhost:8000
 ```
 
 ### Run the evaluations

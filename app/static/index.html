@@ -251,10 +251,88 @@ h1 {
   opacity: 0.95;
   z-index: -1;
 }
-.composer-placeholder {
-  color: var(--placeholder);
+.composer-input {
+  width: 100%;
+  flex: 1;
+  min-height: 2.6em;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #f2f2f2;
+  font-family: inherit;
   font-size: clamp(0.95rem, 1.435vw, 1.5rem);
+  line-height: 1.35;
 }
+.composer-input::placeholder { color: var(--placeholder); }
+
+/* Module toggles — the ablation flags, exposed so a viewer can see what each
+   stage contributes rather than taking it on trust. */
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(10px, 1.3vw, 20px);
+  margin-top: clamp(12px, 1.5vw, 20px);
+  color: #7d7d7d;
+  font-size: clamp(0.72rem, 0.95vw, 0.88rem);
+}
+.toggles label { display: inline-flex; align-items: center; gap: 0.4em; cursor: pointer; }
+.toggles input { accent-color: #ffd400; width: 13px; height: 13px; cursor: pointer; }
+.toggles label:hover span { color: #cfcfcf; }
+
+/* Answer panel */
+.answer {
+  width: min(100%, clamp(300px, 55vw, 913px));
+  margin: clamp(14px, 1.8vw, 24px) auto 0;
+  text-align: left;
+  background: var(--box);
+  border: 1px solid var(--hairline);
+  border-radius: clamp(12px, 1.1vw, 18px);
+  padding: clamp(14px, 1.7vw, 26px);
+  font-size: clamp(0.85rem, 1.08vw, 1.02rem);
+  line-height: 1.5;
+}
+.answer[hidden] { display: none; }
+.answer .sentence { margin: 0 0 clamp(10px, 1.1vw, 15px); color: #ededed; }
+.answer .sentence:last-of-type { margin-bottom: 0; }
+.badge {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.55em;
+  border-radius: 999px;
+  font-size: 0.72em;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  border: 1px solid currentColor;
+}
+.badge.passed   { color: #86ca8a; }
+.badge.repaired { color: #ffd400; }
+.badge.unverified { color: #9e9e9e; }
+.answer details {
+  margin-top: 0.4em;
+  color: #9e9e9e;
+  font-size: 0.9em;
+}
+.answer summary { cursor: pointer; color: #78d0cd; }
+.answer details p {
+  margin: 0.5em 0 0;
+  padding: 0.7em 0.9em;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid rgba(120,208,205,0.5);
+  border-radius: 6px;
+  color: #c8c8c8;
+}
+.answer .refusal { color: #fafafa; font-size: 1.06em; }
+.answer .why { color: #9e9e9e; margin-top: 0.5em; }
+.answer .trace {
+  margin-top: clamp(12px, 1.4vw, 18px);
+  padding-top: clamp(10px, 1.2vw, 14px);
+  border-top: 1px solid var(--hairline);
+  color: #7d7d7d;
+  font-size: 0.85em;
+}
+.answer .err { color: #e88; }
 
 .controls {
   margin-top: auto;
@@ -671,9 +749,10 @@ html.hero-ready .send-btn::before {
         <div class="composer">
           <div class="composer-glow" data-enter="glow"></div>
 
-          <div class="composer-placeholder" data-enter="placeholder">
-            Break down a decision, problem, or idea…
-          </div>
+          <label class="sr-only" for="composerInput">Ask a question</label>
+          <textarea id="composerInput" class="composer-input" rows="2"
+                    data-enter="placeholder"
+                    placeholder="Break down a decision, problem, or idea…"></textarea>
 
           <div class="controls">
             <input type="file" id="fileInput" class="sr-only"
@@ -705,7 +784,7 @@ html.hero-ready .send-btn::before {
               </svg>
             </button>
 
-            <button class="send-btn" type="button" aria-label="Send" data-enter="ctl">
+            <button class="send-btn" id="sendBtn" type="button" aria-label="Send" data-enter="ctl">
               <span class="send-inner">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fafafa"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -717,7 +796,16 @@ html.hero-ready .send-btn::before {
         </div>
       </div>
 
+      <div class="toggles" id="toggles" data-enter="ctl">
+        <label><input type="checkbox" id="tB" checked> <span>B · evaluator</span></label>
+        <label><input type="checkbox" id="tC" checked> <span>C · citations</span></label>
+        <label><input type="checkbox" id="tD" checked> <span>D · verification</span></label>
+        <label><input type="checkbox" id="tE" checked> <span>E · repair &amp; abstain</span></label>
+      </div>
+
       <p class="upload-status" id="uploadStatus" role="status" aria-live="polite"></p>
+
+      <section class="answer" id="answer" aria-live="polite" hidden></section>
     </div>
 
     <div class="trust">
@@ -961,6 +1049,103 @@ html.hero-ready .send-btn::before {
         });
 
       input.value = '';
+    });
+  })();
+
+
+  /* ── Ask ──────────────────────────────────────────────────────────
+     Posts to /ask and renders the answer the way the pipeline actually
+     produces it: one citation per sentence, expandable to the exact
+     passage, a verification badge per sentence, and a refusal rendered
+     as a deliberate product state rather than an error.
+  ─────────────────────────────────────────────────────────────────── */
+  (function ask() {
+    var input = document.getElementById('composerInput');
+    var send = document.getElementById('sendBtn');
+    var out = document.getElementById('answer');
+    if (!input || !send || !out) return;
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+    function show(html) { out.innerHTML = html; out.hidden = false; }
+
+    var busy = false;
+
+    function run() {
+      var q = (input.value || '').trim();
+      if (!q || busy) return;
+      busy = true;
+      send.disabled = true;
+      show('<p class="sentence">Retrieving, grading, generating, verifying…</p>');
+
+      fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: q,
+          use_evaluator: document.getElementById('tB').checked,
+          force_citations: document.getElementById('tC').checked,
+          verify_citations: document.getElementById('tD').checked,
+          repair_and_abstain: document.getElementById('tE').checked
+        })
+      })
+        .then(function (r) {
+          return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; });
+        })
+        .then(function (res) {
+          if (!res.ok) {
+            show('<p class="sentence err">' + esc(res.body.detail || ('Request failed (' + res.status + ').')) + '</p>');
+            return;
+          }
+          var d = res.body;
+
+          /* A refusal is the system working, not an error. */
+          if (d.abstained) {
+            show('<p class="refusal">' + esc(d.answer) + '</p>' +
+                 '<p class="why">This is a deliberate refusal, not a failure. ' +
+                 esc(d.abstain_explanation || '') + '</p>' +
+                 '<p class="trace">trigger <code>' + esc(d.abstain_reason) + '</code>' +
+                 (d.cost_note ? ' · ' + esc(d.cost_note) : '') + '</p>');
+            return;
+          }
+
+          var cites = {};
+          (d.citations || []).forEach(function (c) { cites[c.chunk_id] = c; });
+
+          var html = (d.sentences || []).map(function (sn) {
+            var badge = '<span class="badge ' + esc(sn.status) + '">' + esc(sn.status) +
+              (sn.entailment_score != null ? ' ' + sn.entailment_score.toFixed(2) : '') + '</span>';
+            var sources = (sn.citation_ids || []).map(function (id) {
+              var c = cites[id];
+              return '<details><summary>' + esc(id) + '</summary><p>' +
+                     esc(c ? c.text : 'passage unavailable') + '</p></details>';
+            }).join('');
+            return '<p class="sentence">' + esc(sn.text) + badge + '</p>' + sources;
+          }).join('');
+
+          var rep = d.repair || {};
+          html += '<p class="trace">Module B: <code>' + esc(d.module_b_action || '-') + '</code>' +
+                  ' · retrieval rounds ' + (d.retrieval_rounds || 0) +
+                  ' · corrective ' + (d.corrective_fired ? 'fired' : 'not needed') +
+                  ' · flagged ' + (rep.flagged || 0) +
+                  ' · repaired ' + (rep.repair_succeeded || 0) +
+                  ' · dropped ' + (rep.dropped || 0) + '</p>';
+          show(html);
+        })
+        .catch(function () {
+          show('<p class="sentence err">Could not reach the SCRAG API. ' +
+               'Start it with <code>uvicorn app.api:app --reload</code>.</p>');
+        })
+        .then(function () { busy = false; send.disabled = false; });
+    }
+
+    send.addEventListener('click', run);
+    input.addEventListener('keydown', function (e) {
+      /* Enter sends; Shift+Enter makes a new line. */
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); }
     });
   })();
 

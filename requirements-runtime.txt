@@ -9,8 +9,8 @@
 #   matplotlib  - eval/plot_ablation.py only (~36 MB)
 #   pytest      - tests only
 #
-# pyarrow and pandas are NOT removable: streamlit depends on both, and the UI
-# ships in the same image because free tiers run one container.
+# The frontend is a single static HTML file served by FastAPI, so there is no
+# JS toolchain and no streamlit in the image at all.
 #
 # torch dominates at ~773 MB installed and is unavoidable for transformers.
 # The image installs it from the PyTorch CPU index, so no CUDA libraries are
@@ -41,6 +41,4 @@ protobuf==7.36.1
 tiktoken==0.14.0
 
 # --- UI ---
-streamlit==1.63.0
 pypdf==6.17.0
-requests==2.34.2
