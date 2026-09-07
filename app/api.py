@@ -22,9 +22,11 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import time
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 import config
@@ -49,6 +51,22 @@ app = FastAPI(
 
 # A 500-page PDF is typically 5-50 MB. The old 10 MB cap silently skipped
 # exactly the documents this endpoint is meant to handle.
+# CORS. Only needed when the page and the API are on different hosts - the
+# static page on Vercel, this service on Hugging Face Spaces. Locally they
+# share an origin and none of this applies.
+#
+# Origins come from SCRAG_ALLOWED_ORIGINS (comma-separated). It is NOT
+# wildcarded by default: this API indexes whatever it is sent and answers from
+# it, so letting any site drive it is not a sane default.
+_origins = [o.strip() for o in os.getenv("SCRAG_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+if _origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+    )
+
 MAX_UPLOAD_BYTES = 150 * 1024 * 1024
 MAX_REQUEST_BYTES = 2 * 1024 * 1024 * 1024      # 25 large PDFs in one go
 MAX_FILES_PER_REQUEST = 50

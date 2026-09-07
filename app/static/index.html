@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SCRAG — Think clearly. Decide confidently</title>
+<meta name="scrag-api" content="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
@@ -946,6 +947,31 @@ html.hero-ready .send-btn::before {
   'use strict';
 
   var root = document.documentElement;
+
+  /* ── Where the API lives ──────────────────────────────────────────
+     Served by FastAPI locally, the page and the API share an origin and
+     API_BASE stays empty. Hosted on Vercel they are split, so the base
+     is set once here, in priority order:
+
+       1. ?api=https://host          (also remembered, for sharing a link)
+       2. localStorage               (a previous ?api=)
+       3. <meta name="scrag-api">    (baked at deploy time)
+       4. same origin                (local development)
+  ─────────────────────────────────────────────────────────────────── */
+  var API_BASE = (function () {
+    var q = new URLSearchParams(location.search).get('api');
+    if (q !== null) {
+      try { q ? localStorage.setItem('scrag_api', q) : localStorage.removeItem('scrag_api'); } catch (e) {}
+      return q.replace(/\/$/, '');
+    }
+    var stored = null;
+    try { stored = localStorage.getItem('scrag_api'); } catch (e) {}
+    if (stored) return stored.replace(/\/$/, '');
+    var meta = document.querySelector('meta[name="scrag-api"]');
+    var baked = meta && meta.content && meta.content.indexOf('__') !== 0 ? meta.content : '';
+    return baked.replace(/\/$/, '');
+  })();
+  function api(path) { return API_BASE + path; }
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ── Logo rays: 24 radial lines, generated rather than hand-authored ── */
@@ -1021,7 +1047,7 @@ html.hero-ready .send-btn::before {
       var form = new FormData();
       files.forEach(function (f) { form.append('files', f, f.name); });
 
-      fetch('/ingest', { method: 'POST', body: form })
+      fetch(api('/ingest'), { method: 'POST', body: form })
         .then(function (r) {
           return r.json().then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
         })
@@ -1053,6 +1079,29 @@ html.hero-ready .send-btn::before {
   })();
 
 
+  /* ── Backend reachability ───────────────────────────────────────
+     A split deployment can have a live page and a sleeping API. Saying so
+     up front is better than letting the first upload fail mysteriously.
+  ─────────────────────────────────────────────────────────────────── */
+  (function health() {
+    var status = document.getElementById('uploadStatus');
+    if (!status) return;
+    fetch(api('/health'))
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (h) {
+        if (!h.api_key_configured) {
+          status.innerHTML = '<span class="warn">Connected.</span> Generation is unavailable ' +
+            '(no API key on the server) - upload, retrieval and verification still work.';
+        }
+      })
+      .catch(function () {
+        status.innerHTML = '<span class="warn">Backend not connected.</span> ' +
+          'This page is static; the SCRAG API runs separately. Point it at one with ' +
+          '<code>?api=https://your-api-host</code>, or run it locally with ' +
+          '<code>uvicorn app.api:app --reload</code>.';
+      });
+  })();
+
   /* ── Ask ──────────────────────────────────────────────────────────
      Posts to /ask and renders the answer the way the pipeline actually
      produces it: one citation per sentence, expandable to the exact
@@ -1081,7 +1130,7 @@ html.hero-ready .send-btn::before {
       send.disabled = true;
       show('<p class="sentence">Retrieving, grading, generating, verifying…</p>');
 
-      fetch('/ask', {
+      fetch(api('/ask'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

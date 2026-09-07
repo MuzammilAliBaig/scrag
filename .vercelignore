@@ -1,0 +1,27 @@
+# Only app/static/ is deployed. Everything else is a Python service that
+# cannot run on Vercel (914 MB of dependencies against a 250 MB cap) and
+# would otherwise be uploaded for nothing.
+.venv/
+.git/
+.github/
+.claude/
+data/
+docs/
+eval/
+train/
+tests/
+core/
+app/*.py
+app/__pycache__/
+__pycache__/
+*.pyc
+*.md
+!app/static/**
+Dockerfile
+docker-compose.yml
+deploy/
+requirements*.txt
+config.py
+.env
+.env.*
+.mcp.json

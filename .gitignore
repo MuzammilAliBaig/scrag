@@ -37,3 +37,5 @@ Thumbs.db
 .idea/
 # Third-party skill installed by uipro-cli; a local authoring aid, not project code.
 .claude/
+
+.vercel
