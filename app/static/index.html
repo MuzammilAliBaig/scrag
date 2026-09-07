@@ -1095,10 +1095,16 @@ html.hero-ready .send-btn::before {
         }
       })
       .catch(function () {
-        status.innerHTML = '<span class="warn">Backend not connected.</span> ' +
-          'This page is static; the SCRAG API runs separately. Point it at one with ' +
-          '<code>?api=https://your-api-host</code>, or run it locally with ' +
-          '<code>uvicorn app.api:app --reload</code>.';
+        var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        status.innerHTML = local
+          ? '<span class="warn">Backend not reachable.</span> Start it with ' +
+            '<code>uvicorn app.api:app --reload</code> and reload this page.'
+          : '<span class="warn">Backend not connected.</span> This page is static and the ' +
+            'SCRAG API runs separately. Easiest: run <code>uvicorn app.api:app --reload</code> ' +
+            'and open <code>http://127.0.0.1:8000</code> instead - it serves this page and the ' +
+            'API together, so nothing else is needed. To drive a remote API from here instead, ' +
+            'use <code>?api=https://your-api-host</code> and set ' +
+            '<code>SCRAG_ALLOWED_ORIGINS=' + location.origin + '</code> on that server.';
       });
   })();
 
