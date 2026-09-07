@@ -229,7 +229,12 @@ uvicorn app.api:app --reload     # terminal 1 — the API on :8000
 streamlit run app/ui.py          # terminal 2 — the UI on :8501
 ```
 
-Click **Load demo corpus** in the sidebar, then try:
+The **landing page** is at <http://127.0.0.1:8000> — a single static file
+(`app/static/index.html`, no frameworks) served by the API itself, so its upload button posts to
+`/ingest` on the same origin and genuinely indexes what you give it.
+
+The full workbench is the Streamlit app on :8501. Click **Load demo corpus** in the sidebar, then
+try:
 
 - *"How much of my tuition is refunded if I withdraw in week four?"* — answers, with citations
 - *"How much does a parking permit cost?"* — refuses, and tells you why

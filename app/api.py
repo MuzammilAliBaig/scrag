@@ -25,7 +25,7 @@ import logging
 import time
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 import config
 from app.schemas import (
@@ -128,6 +128,23 @@ def extract_text(filename: str, raw: bytes) -> str:
 # --------------------------------------------------------------------------
 # Endpoints
 # --------------------------------------------------------------------------
+STATIC_DIR = config.REPO_ROOT / "app" / "static"
+
+
+@app.get("/", include_in_schema=False)
+def landing():
+    """The landing page.
+
+    Served from the API rather than a separate host so the page's upload
+    button posts to /ingest on the SAME ORIGIN - no CORS, no second
+    deployment, and the button does real work instead of miming it.
+    """
+    index = STATIC_DIR / "index.html"
+    if not index.exists():
+        raise HTTPException(status_code=404, detail="landing page not built")
+    return FileResponse(index, media_type="text/html")
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     """Liveness plus index and model readiness. Never returns the API key."""
