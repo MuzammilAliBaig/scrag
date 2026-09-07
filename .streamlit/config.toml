@@ -1,0 +1,16 @@
+# Dark theme matching the rest of the project.
+[theme]
+base = "dark"
+backgroundColor = "#0c0c0c"
+secondaryBackgroundColor = "#111111"
+textColor = "#fafafa"
+primaryColor = "#ffd400"
+
+[server]
+headless = true
+# 200 MB: a 500-page PDF is typically 5-50 MB, and the default 200 MB cap is
+# already generous enough for a batch of them.
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false

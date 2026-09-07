@@ -2,8 +2,8 @@
 # SCRAG on Hugging Face Spaces - self-contained, CPU-only.
 #
 # Differences from the root Dockerfile: listens on 7860 (what Spaces
-# expects) and runs one process, since FastAPI serves the landing page
-# at / as well as the JSON API.
+# expects) and runs the Streamlit app, which calls the pipeline in-process
+# so there is no second service to host.
 #
 # Image size is the binding constraint on free tiers, and torch plus two
 # transformer checkpoints gets large fast. Three things keep it down:
@@ -122,4 +122,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${PORT}/health" || exit 1
 
 # The API also serves the landing page at /, so this is the only process.
-CMD ["sh", "-c", "exec uvicorn app.api:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "exec streamlit run app/ui.py --server.port=${PORT} --server.address=0.0.0.0 --server.headless=true"]

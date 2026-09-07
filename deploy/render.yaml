@@ -15,9 +15,9 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /health
+    healthCheckPath: /_stcore/health
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false          # set in the dashboard; never committed
       - key: PORT
-        value: "8000"
+        value: "8501"

@@ -39,3 +39,6 @@ Thumbs.db
 .claude/
 
 .vercel
+
+# Streamlit secrets - never commit
+.streamlit/secrets.toml

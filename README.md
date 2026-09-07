@@ -41,7 +41,7 @@ been checked by a separate model that never saw the sentence being written.
 | Verifier | `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli` | trained on FEVER, which is fact-checking against Wikipedia — exactly this task |
 | Generator | **Claude API** (`claude-opus-5`) | the only paid part of the whole project |
 | Backend | FastAPI + Uvicorn | |
-| Frontend | One static HTML file | no framework, no build step; FastAPI serves it itself |
+| Frontend | Streamlit | calls the pipeline **in-process**, so there is no backend to host separately |
 | Packaging | Docker | multi-stage, CPU-only wheels, 3.6 GB |
 | Frontend hosting | Vercel | static page only - 914 MB of Python cannot fit a serverless function |
 | CI | GitHub Actions | with a regression gate that actually fails the build |
@@ -77,9 +77,9 @@ the whole thing becomes a clean refusal rather than a stub.
 **You can switch the modules off.** The page has a toggle per stage, so you can see what each one
 actually contributes instead of taking my word for it.
 
-**One page, no build step.** The whole frontend is a single static HTML file - no React, no
-Tailwind, no bundler, no `node_modules`. FastAPI serves it at `/`, which is also why its upload
-button posts to `/ingest` on the same origin and does real work rather than miming it.
+**No separate backend.** The Streamlit app imports the pipeline directly instead of calling an
+API over HTTP. One process, one deployment, nothing to keep in sync — and when it is live, the
+backend is live, because the backend *is* the app.
 
 **It knows what it costs.** Token usage and dollar cost are measured per run — **$0.01089 per
 question**, measured, not estimated.
@@ -88,14 +88,17 @@ question**, measured, not estimated.
 
 ## Keyboard shortcuts
 
+These are Streamlit's own bindings — I have not added custom ones, and would rather say so than
+invent a table:
+
 | Key | Does |
 |---|---|
-| `Enter` | send the question |
-| `Shift` + `Enter` | new line inside the composer |
-| `Esc` | close the mobile menu |
+| `Ctrl` + `Enter` | submit the question box |
+| `R` | rerun the app |
+| `C` | clear the cache |
+| `Esc` | close an expanded panel |
 
-That is the honest list - three bindings, all in the composer. Everything else is a click, and the
-heavy lifting happens on the command line ([Running the project](#running-the-project)).
+The heavy lifting happens on the command line ([Running the project](#running-the-project)).
 
 ---
 
@@ -135,10 +138,16 @@ one code path, because five forked pipelines drift and stop measuring what they 
 FastAPI service, a Docker image, and a CI gate — which I fired five ways, including by genuinely
 crippling the verifier and watching citation recall fall from 0.8388 to 0.4509 and the build go red.
 
-**The frontend, twice.** I built it in Streamlit first because it was quick, then replaced it with a
-single static HTML page. Streamlit dragged `pyarrow` and `pandas` into the Docker image for a UI
-that was four widgets and a list, and it owned the page so I could not control the layout. One
-hand-written file does the same job in 44 KB with no build step.
+**The frontend, three times.** Streamlit first, because it was quick. Then a hand-written static
+HTML page, because Streamlit dragged `pyarrow` and `pandas` into the image and owned the layout.
+Then back to Streamlit — for a reason that had nothing to do with looks.
+
+The static page could only talk to the pipeline over HTTP, which meant hosting a Python backend
+somewhere. Nowhere free would take it: Vercel caps serverless functions at 250 MB against 914 MB of
+dependencies, Hugging Face now charges for Docker Spaces, and Render's free tier gives 512 MB of RAM
+against a 3.6 GB image. Streamlit Community Cloud runs full Python for free, and the app can import
+the pipeline directly rather than calling it. One deployment, no CORS, no second URL that can be
+down while the first is up. The prettier frontend was the one that could not ship.
 
 **Phase 10: writing it up.** Doing the error analysis is what caught my own mistake — see below.
 
@@ -228,14 +237,18 @@ and free — and the app tells you clearly when generation is unavailable instea
 
 ### Run the app
 
-One process. The API serves the page as well as the JSON endpoints:
-
 ```bash
-uvicorn app.api:app --reload     # http://127.0.0.1:8000
+streamlit run app/ui.py          # http://localhost:8501
 ```
 
-Open <http://127.0.0.1:8000>. Upload your own documents with the **+** button, or seed the bundled
-demo corpus with `curl -X POST localhost:8000/ingest/demo`, then ask:
+That is the whole product — the pipeline runs inside it. The FastAPI service is optional and only
+needed for programmatic access:
+
+```bash
+uvicorn app.api:app --reload     # http://127.0.0.1:8000  (JSON API)
+```
+
+In the sidebar, click **Load demo corpus** (or upload your own PDFs), then ask:
 
 - *"How much of my tuition is refunded if I withdraw in week four?"* — answers, with citations
 - *"How much does a parking permit cost?"* — refuses, and tells you why
@@ -243,8 +256,25 @@ demo corpus with `curl -X POST localhost:8000/ingest/demo`, then ask:
 Or with Docker:
 
 ```bash
-docker compose up --build        # http://localhost:8000
+docker compose up --build        # http://localhost:8501
 ```
+
+### Deploy it
+
+**Streamlit Community Cloud**, free, and the backend works because it is the same process:
+
+1. <https://share.streamlit.io> → **New app** → pick `MuzammilAliBaig/scrag`
+2. Main file path: `app/ui.py`
+3. **Advanced settings → Secrets**, paste:
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   ```
+4. Deploy.
+
+One caveat worth knowing before you click: free instances get about **1 GB of RAM**, and torch plus
+three checkpoints is tight. If it runs out, switch **B** and **D** off in the sidebar — Module A
+plus generation fits comfortably, and the app degrades to cited-but-unverified answers rather than
+falling over.
 
 ### Run the evaluations
 

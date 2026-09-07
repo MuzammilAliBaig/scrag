@@ -127,25 +127,37 @@ So there is currently **no free host** for the backend. Honest options:
 **The frontend has no such problem.** It is a single 48 KB static file and Vercel hosts it free -
 see section 3a.
 
-### 3a. Frontend on Vercel (free, works today)
+### 3a. Streamlit Community Cloud (free, and the backend works)
 
-```bash
-vercel deploy --prod --name scrag
-```
+**This is the recommended deployment.** The Streamlit app imports the pipeline in-process, so there
+is no separate backend to host - which is exactly what made every other free option fail.
 
-`vercel.json` serves `app/static` only, and `.vercelignore` keeps the 914 MB of Python out of the
-upload. After the first deploy, **turn off Deployment Protection** or the URL redirects every
-visitor to a Vercel login:
+1. <https://share.streamlit.io> -> **New app** -> pick the repository
+2. Main file path: `app/ui.py`
+3. **Advanced settings -> Secrets**:
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   ```
+4. Deploy.
 
-> Vercel dashboard -> project -> Settings -> **Deployment Protection** -> Vercel Authentication ->
-> **Disabled**
+Free instances get roughly **1 GB of RAM**. torch plus three checkpoints is tight, so if the app is
+killed for memory, switch Modules **B** and **D** off in the sidebar: Module A plus generation fits
+comfortably and the app degrades to cited-but-unverified answers rather than crashing.
 
-This cannot be done from the CLI: `vercel` CLI tokens are not authorised against the REST API
-(`GET /v9/projects/...` returns 403), so it is a dashboard setting.
+The Module B checkpoint is not in git (`data/models/` is ignored), so **B is unavailable on a fresh
+deploy** until you publish it to a private HF repo and pull it at startup, or commit it.
 
-Point the page at a backend by visiting `?api=https://your-api-host` once - it is remembered in
-localStorage - or bake it into `<meta name="scrag-api">` before deploying. Set
-`SCRAG_ALLOWED_ORIGINS` on the API to the Vercel origin, or the browser will block the calls.
+### 3z. Vercel - not viable, recorded for the next person
+
+Vercel can host a static page, but not this backend: **914 MB of dependencies against a 250 MB
+serverless cap**, no persistent filesystem for the FAISS index, and a 531 MB torch import per cold
+start. A static frontend there would still need the Python service hosted somewhere else, which is
+the problem Streamlit Cloud removes entirely.
+
+Two things that cost time when we tried it, worth knowing: Deployment Protection is **on by
+default** and redirects every visitor to a Vercel login, and it cannot be disabled from the CLI -
+`vercel` CLI tokens are not authorised against the REST API, so even `GET /v9/projects/...` returns
+403. It is a dashboard setting.
 
 ### 3b. Deploy to Hugging Face Spaces (needs PRO)
 
