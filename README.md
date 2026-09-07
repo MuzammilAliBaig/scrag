@@ -43,6 +43,7 @@ been checked by a separate model that never saw the sentence being written.
 | Backend | FastAPI + Uvicorn | |
 | Frontend | One static HTML file | no framework, no build step; FastAPI serves it itself |
 | Packaging | Docker | multi-stage, CPU-only wheels, 3.6 GB |
+| Frontend hosting | Vercel | static page only - 914 MB of Python cannot fit a serverless function |
 | CI | GitHub Actions | with a regression gate that actually fails the build |
 | Datasets | PopQA, ALCE (ASQA) | public, standard, and free |
 

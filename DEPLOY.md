@@ -98,7 +98,56 @@ a crash.
 
 ---
 
-## 3. Deploy to Hugging Face Spaces (recommended free tier)
+## 3. Hosting the backend - read this first
+
+**Hugging Face Spaces is no longer free for this project.** Creating a Docker Space now returns:
+
+```
+402 Payment Required
+Static Spaces are free for everyone, but hosting Gradio and Docker Spaces
+on free cpu-basic requires a PRO subscription.
+```
+
+Verified 2026-09-07 with `hf repo create scrag --repo-type space --space-sdk docker`. Only *static*
+Spaces remain free, which cannot run this backend. The instructions below still work, but they need
+a PRO subscription.
+
+**Render's free tier will not fit either.** Free instances cap at 512 MB RAM, and this stack loads
+torch plus two transformer checkpoints. The image is 3.6 GB.
+
+So there is currently **no free host** for the backend. Honest options:
+
+| Option | Cost | Notes |
+|---|---|---|
+| HF Spaces + PRO | paid | `deploy/spaces/` is ready; smallest change |
+| Render / Railway / Fly paid tier | paid | needs >= 2 GB RAM |
+| Run locally, expose with a tunnel | free | `uvicorn app.api:app` + cloudflared/ngrok; fine for a viva |
+| Frontend only on Vercel | free | the page deploys; upload and ask need a backend |
+
+**The frontend has no such problem.** It is a single 48 KB static file and Vercel hosts it free -
+see section 3a.
+
+### 3a. Frontend on Vercel (free, works today)
+
+```bash
+vercel deploy --prod --name scrag
+```
+
+`vercel.json` serves `app/static` only, and `.vercelignore` keeps the 914 MB of Python out of the
+upload. After the first deploy, **turn off Deployment Protection** or the URL redirects every
+visitor to a Vercel login:
+
+> Vercel dashboard -> project -> Settings -> **Deployment Protection** -> Vercel Authentication ->
+> **Disabled**
+
+This cannot be done from the CLI: `vercel` CLI tokens are not authorised against the REST API
+(`GET /v9/projects/...` returns 403), so it is a dashboard setting.
+
+Point the page at a backend by visiting `?api=https://your-api-host` once - it is remembered in
+localStorage - or bake it into `<meta name="scrag-api">` before deploying. Set
+`SCRAG_ALLOWED_ORIGINS` on the API to the Vercel origin, or the browser will block the calls.
+
+### 3b. Deploy to Hugging Face Spaces (needs PRO)
 
 Spaces wants one container listening on **port 7860** running as uid 1000.
 
